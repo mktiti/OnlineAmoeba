@@ -5,6 +5,9 @@ import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
 import hu.bme.softarch.amoeba.game.web.generated.ProjectInfo
 import hu.bme.softarch.amoeba.web.Server.startServer
+import java.nio.file.Paths
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import kotlin.system.exitProcess
 
 class Arguments(parser: ArgParser) {
@@ -17,6 +20,8 @@ class Arguments(parser: ArgParser) {
 
     val clientDir by parser.storing("-c", "--client", help = "Path to host client from").default<String?>(null)
 
+    val logLocation by parser.storing("-l", "--log", help = "Log file destination").default("log")
+
 }
 
 fun main(args: Array<String>) = mainBody {
@@ -25,6 +30,8 @@ fun main(args: Array<String>) = mainBody {
             println("Online Amoeba Version ${ProjectInfo.version}")
             exitProcess(0)
         }
+
+        setLogLocation(logLocation)
 
         startServer(port, webPort, clientDir)
 
