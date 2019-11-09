@@ -15,7 +15,7 @@ class Arguments(parser: ArgParser) {
 
     val port by parser.storing("-w", "--ws-port", help = "Port for web socket connections, default: 8080", transform = String::toInt).default(8080)
 
-    val clientDir by parser.storing("-c", "--client", help = "Path to host client from").default("")
+    val clientDir by parser.storing("-c", "--client", help = "Path to host client from").default<String?>(null)
 
 }
 
