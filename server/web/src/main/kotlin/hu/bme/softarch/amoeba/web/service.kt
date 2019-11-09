@@ -24,7 +24,7 @@ class GameHandler {
     @GET
     @Path("/:invite")
     fun join(@QueryParam("invite") invite: String) = entity {
-        inviteStore.fetch(invite)
+        inviteStore.fetch(invite)?.yPass
     }
 
 }

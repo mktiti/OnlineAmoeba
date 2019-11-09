@@ -4,7 +4,9 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.handler.ContextHandlerCollection
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.glassfish.jersey.servlet.ServletContainer
+import javax.websocket.WebSocketContainer
 
 object Server {
 
@@ -26,6 +28,11 @@ object Server {
             addServlet(DefaultServlet::class.java, "/")
         }
 
+        val wsContext = ServletContextHandler(ServletContextHandler.SESSIONS).apply {
+            contextPath = "/ws/"
+            WebSocketServerContainerInitializer.configureContext(this).addEndpoint(MatchClientController::class.java)
+        }
+
         val restContext = ServletContextHandler(ServletContextHandler.NO_SESSIONS).apply {
             with (addServlet(ServletContainer::class.java, "/api/*")) {
                 initOrder = 0
@@ -41,7 +48,7 @@ object Server {
         }
 
         jettyServer.handler = ContextHandlerCollection().apply {
-           handlers = arrayOf(staticContext, restContext)
+           handlers = arrayOf(staticContext, wsContext, restContext)
         }
 
         jettyServer.start()
