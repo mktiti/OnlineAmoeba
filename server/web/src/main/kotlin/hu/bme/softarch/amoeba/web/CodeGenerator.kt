@@ -2,9 +2,11 @@ package hu.bme.softarch.amoeba.web
 
 object CodeGenerator {
 
-    private val defaultAlphabet = ('a' .. 'z') + ('A' .. 'Z') + ('0' .. '9')
+    val digitAlphabet = ('0' .. '9').toList()
+
+    val defaultAlphabet = ('a' .. 'z') + ('A' .. 'Z') + digitAlphabet
 
     fun generate(length: Int, alphabet: List<Char> = defaultAlphabet)
-            = (1 .. length).joinToString { defaultAlphabet.random().toString() }
+            = (1 .. length).joinToString(separator = "") { alphabet.random().toString() }
 
 }

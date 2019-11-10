@@ -9,7 +9,7 @@ import javax.ws.rs.core.MediaType
 @Produces(MediaType.APPLICATION_JSON)
 class GameHandler {
 
-    private val lobbyService: LobbyService = TODO()
+    private val lobbyService: LobbyService = InMemLobbyService
     private val inviteStore: InviteStore = SyncInviteStore()
 
     @POST
@@ -24,7 +24,7 @@ class GameHandler {
     @GET
     @Path("/:invite")
     fun join(@QueryParam("invite") invite: String) = entity {
-        inviteStore.fetch(invite)?.yPass
+        inviteStore.fetch(invite)?.oPass
     }
 
 }

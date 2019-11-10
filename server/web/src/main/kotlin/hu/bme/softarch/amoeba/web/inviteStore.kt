@@ -20,7 +20,7 @@ class SyncInviteStore(
     override fun addGame(game: GameInfo): String {
         synchronized(lock) {
             while (true) {
-                val invite = CodeGenerator.generate(inviteLength)
+                val invite = CodeGenerator.generate(inviteLength, CodeGenerator.digitAlphabet)
                 if (data[invite] == null) {
                     data[invite] = game
                     return invite

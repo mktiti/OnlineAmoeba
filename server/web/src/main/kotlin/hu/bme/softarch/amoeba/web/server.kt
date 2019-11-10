@@ -1,12 +1,11 @@
 package hu.bme.softarch.amoeba.web
 
 import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.server.handler.ContextHandlerCollection
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
+import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.glassfish.jersey.servlet.ServletContainer
-import javax.websocket.WebSocketContainer
 
 object Server {
 
@@ -17,38 +16,35 @@ object Server {
 
         val jettyServer = Server(webPort)
 
-        val staticContext = ServletContextHandler(ServletContextHandler.NO_SESSIONS).apply {
-            contextPath = "/static/"
+        ServletContextHandler(ServletContextHandler.SESSIONS).apply {
+            contextPath = "/"
+            jettyServer.handler = this
 
             if (clientDir != null) {
-                resourceBase = clientDir
+                ServletHolder("static-client", DefaultServlet::class.java).apply {
+                    resourceBase = clientDir
+                    setInitParameter("pathInfoOnly", "true")
+
+                    addServlet(this, "/static/*")
+                }
+
                 log.info("Serving static files from $baseResource")
             }
 
-            addServlet(DefaultServlet::class.java, "/")
-        }
-
-        val wsContext = ServletContextHandler(ServletContextHandler.SESSIONS).apply {
-            contextPath = "/ws/"
-            WebSocketServerContainerInitializer.configureContext(this).addEndpoint(MatchClientController::class.java)
-        }
-
-        val restContext = ServletContextHandler(ServletContextHandler.NO_SESSIONS).apply {
-            with (addServlet(ServletContainer::class.java, "/api/*")) {
+            with(addServlet(ServletContainer::class.java, "/api/*")) {
                 initOrder = 0
                 setInitParameter(
-                    "jersey.config.server.provider.packages",
-                    "hu.bme.softarch.amoeba.web, org.codehaus.jackson.jaxrs, org.glassfish.jersey.examples.multipart"
+                        "jersey.config.server.provider.packages",
+                        "hu.bme.softarch.amoeba.web, org.codehaus.jackson.jaxrs, org.glassfish.jersey.examples.multipart"
                 )
                 setInitParameter(
-                    "jersey.config.server.provider.classnames",
-                    "org.glassfish.jersey.jackson.JacksonFeature, org.glassfish.jersey.media.multipart.MultiPartFeature"
+                        "jersey.config.server.provider.classnames",
+                        "org.glassfish.jersey.jackson.JacksonFeature, org.glassfish.jersey.media.multipart.MultiPartFeature"
                 )
             }
-        }
 
-        jettyServer.handler = ContextHandlerCollection().apply {
-           handlers = arrayOf(staticContext, wsContext, restContext)
+            WebSocketServerContainerInitializer.configureContext(this).addEndpoint(MatchClientController::class.java)
+            addServlet(ServletHolder("default", DefaultServlet()), "/")
         }
 
         jettyServer.start()

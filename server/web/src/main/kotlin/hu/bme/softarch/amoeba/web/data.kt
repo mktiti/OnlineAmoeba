@@ -4,18 +4,18 @@ import hu.bme.softarch.amoeba.game.Pos
 import java.time.LocalDateTime
 
 data class GameInfo(
-    val id: String,
+    val id: Long,
     val createdAt: LocalDateTime,
 
     val toWin: Int,
 
     val xPass: String,
-    val yPass: String
+    val oPass: String
 )
 
 data class GameData(
-    val xTiles: List<Pos>,
-    val yTiles: List<Pos>
+    val xTiles: List<Pos> = emptyList(),
+    val oTiles: List<Pos> = emptyList()
 )
 
 data class FullGame(

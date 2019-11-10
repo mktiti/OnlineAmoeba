@@ -76,7 +76,7 @@ class MatchController {
 }
 
 @ServerEndpoint("/game/{joinCode}")
-class MatchClientController {
+open class MatchClientController {
 
     companion object {
         private val matches = listOf(MatchController())
@@ -88,12 +88,13 @@ class MatchClientController {
 
     private lateinit var remote: RemoteEndpoint.Basic
 
-    private val channel: (String) -> Unit = remote::sendText
+    private lateinit var channel: (String) -> Unit
 
     @OnOpen
     fun onOpen(session: Session, @PathParam("joinCode") joinCode: String) {
         log.info("WS client connected")
         remote = session.basicRemote
+        channel = remote::sendText
         proxy = matches.map { it.proxyForJoinCode(joinCode, channel) }.first() ?: return
     }
 
