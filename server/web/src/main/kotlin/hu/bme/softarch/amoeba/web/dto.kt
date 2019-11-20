@@ -8,6 +8,7 @@ data class NewGameData(
 )
 
 data class CreatedGameData(
+    val id: Long,
     val inviteCode: String,
     val hostJoinCode: String
 )

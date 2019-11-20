@@ -5,9 +5,6 @@ import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
 import hu.bme.softarch.amoeba.game.web.generated.ProjectInfo
 import hu.bme.softarch.amoeba.web.Server.startServer
-import java.nio.file.Paths
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import kotlin.system.exitProcess
 
 class Arguments(parser: ArgParser) {
@@ -32,6 +29,12 @@ fun main(args: Array<String>) = mainBody {
         }
 
         setLogLocation(logLocation)
+
+        val testHandler = GameHandler()
+        val game = testHandler.create(NewGameData(tilesToWin = 5)).entity as CreatedGameData
+        val clientJoin = testHandler.join(game.inviteCode).entity
+
+        println("Test game ready: Id: ${game.id}, host join: ${game.hostJoinCode}, client join: $clientJoin")
 
         startServer(port, webPort, clientDir)
 

@@ -16,7 +16,7 @@ object Server {
 
         val jettyServer = Server(webPort)
 
-        ServletContextHandler(ServletContextHandler.SESSIONS).apply {
+        ServletContextHandler(ServletContextHandler.NO_SESSIONS).apply {
             contextPath = "/"
             jettyServer.handler = this
 

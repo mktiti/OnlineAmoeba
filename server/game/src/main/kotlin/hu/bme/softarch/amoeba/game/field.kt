@@ -1,10 +1,13 @@
 package hu.bme.softarch.amoeba.game
 
 import java.math.BigInteger.ONE
+import java.math.BigInteger.valueOf
 
 interface Field {
 
     operator fun get(pos: Pos): Sign?
+
+    fun positionsOf(sign: Sign): Collection<Pos>
 
 }
 
@@ -16,6 +19,8 @@ interface MutableField : Field {
 
 class MapField(
     private val toWin: Int,
+    xs: Collection<Pos> = emptyList(),
+    os: Collection<Pos> = emptyList(),
     blockSize: Int = 512
 ) : MutableField {
 
@@ -31,6 +36,11 @@ class MapField(
     private val blockSize = blockSize.toBigInteger()
 
     private val blocks = mutableListOf<MutableFieldBlock>()
+
+    init {
+        xs.forEach { setWithoutCheck(it, Sign.X) }
+        os.forEach { setWithoutCheck(it, Sign.O) }
+    }
 
     private fun blockOf(pos: Pos): MutableFieldBlock? = blocks.find { it.contains(pos) }
 
@@ -72,8 +82,20 @@ class MapField(
             throw IllegalArgumentException("Pos $pos is already occupied!")
         }
 
-        val block = blockOf(pos) ?: createBlock(pos)
-        block[pos] = sign
+        setWithoutCheck(pos, sign)
         return isWon(pos, sign, toWin)
     }
+
+    private fun setWithoutCheck(pos: Pos, sign: Sign) {
+        val block = blockOf(pos) ?: createBlock(pos)
+        block[pos] = sign
+    }
+
+    override fun positionsOf(sign: Sign): Collection<Pos> =
+        blocks.flatMap { block ->
+            val xOffset = block.range.bottomLeft.x
+            val yOffset = block.range.bottomLeft.y
+            block.positionsOf(sign).map { Pos(xOffset + valueOf(it.x.toLong()), yOffset + valueOf(it.y.toLong())) }
+        }
+
 }

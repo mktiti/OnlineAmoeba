@@ -18,12 +18,12 @@ class GameHandler {
         val game = lobbyService.createGame(params.tilesToWin)
         val invite = inviteStore.addGame(game)
 
-        CreatedGameData(inviteCode = invite, hostJoinCode = game.xPass)
+        CreatedGameData(id = game.id, inviteCode = invite, hostJoinCode = game.xPass)
     }
 
     @GET
-    @Path("/:invite")
-    fun join(@QueryParam("invite") invite: String) = entity {
+    @Path("/{invite}")
+    fun join(@PathParam("invite") invite: String) = entity {
         inviteStore.fetch(invite)?.oPass
     }
 

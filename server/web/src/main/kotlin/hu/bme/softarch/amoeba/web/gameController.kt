@@ -1,10 +1,12 @@
 package hu.bme.softarch.amoeba.web
 
-import hu.bme.softarch.amoeba.game.MapField
-import hu.bme.softarch.amoeba.game.MutableField
+import com.fasterxml.jackson.core.JsonParseException
+import org.eclipse.jetty.websocket.api.CloseException
+import java.util.concurrent.locks.ReentrantLock
 import javax.websocket.*
 import javax.websocket.server.PathParam
 import javax.websocket.server.ServerEndpoint
+import kotlin.concurrent.withLock
 
 interface ClientProxy {
 
@@ -14,98 +16,63 @@ interface ClientProxy {
 
 }
 
-class MatchController {
-
-    private inner class Proxy(private val isX: Boolean) : ClientProxy {
-        override fun onClose(channel: (String) -> Unit) {
-            removeChannel(isX, channel)
-        }
-
-        override fun onMessage(message: String) {
-            onMessage(isX, message)
-        }
-    }
-
-    private inner class ClientData(
-            isX: Boolean,
-            val joinCode: String
-    ) {
-        val proxy: ClientProxy by lazy { Proxy(isX) }
-
-        val channels = mutableListOf<(String) -> Unit>()
-    }
-
-    private val game: MutableField by lazy { MapField(5) }
-
-    private val xData = ClientData(true, "123")
-    private val oData = ClientData(false, "abc")
-
-    fun proxyForJoinCode(joinCode: String, channel: (String) -> Unit): ClientProxy? {
-        val isX = when (joinCode) {
-            xData.joinCode -> true
-            oData.joinCode -> false
-            else -> return null
-        }
-
-        addChannel(isX, channel)
-        return data(isX).proxy
-    }
-
-    private fun data(isX: Boolean): ClientData = if (isX) xData else oData
-
-    private fun send(toX: Boolean, message: String) {
-        data(toX).channels.forEach { channel ->
-            channel(message)
-        }
-    }
-
-    private fun onMessage(fromX: Boolean, message: String) {
-        send(!fromX, "Opponent message: '$message'")
-    }
-
-    private fun addChannel(fromX: Boolean, channel: (String) -> Unit) {
-        data(fromX).channels += channel
-        send(!fromX, "New client joined for ${if (fromX) 'X' else 'O'}")
-    }
-
-    private fun removeChannel(fromX: Boolean, channel: (String) -> Unit) {
-        data(fromX).channels -= channel
-        send(!fromX, "Client closed for ${if (fromX) 'X' else 'O'}")
-    }
-
-}
-
-@ServerEndpoint("/game/{joinCode}")
-open class MatchClientController {
+@ServerEndpoint("/game/{gameId}/{joinCode}", encoders = [WsMessageEncoder::class], decoders = [WsMessageDecoder::class])
+class MatchClientController {
 
     companion object {
-        private val matches = listOf(MatchController())
+        private val matchLock = ReentrantLock()
+
+        private val matches = mutableMapOf<Long, MatchController>()
     }
 
     private val log by logger()
 
-    private lateinit var proxy: ClientProxy
+    private val lobbyService = InMemLobbyService
 
-    private lateinit var remote: RemoteEndpoint.Basic
-
-    private lateinit var channel: (String) -> Unit
+    private fun getOrInitController(gameId: Long): MatchController? {
+        return matches[gameId] ?: matchLock.withLock {
+            matches[gameId] ?: MatchController(lobbyService.getGame(gameId) ?: return null).apply {
+                matches[gameId] = this
+            }
+        }
+    }
 
     @OnOpen
-    fun onOpen(session: Session, @PathParam("joinCode") joinCode: String) {
-        log.info("WS client connected")
-        remote = session.basicRemote
-        channel = remote::sendText
-        proxy = matches.map { it.proxyForJoinCode(joinCode, channel) }.first() ?: return
+    fun onOpen(session: Session, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String) {
+        log.info("WS client connected for game #$gameId")
+
+        val controller = getOrInitController(gameId)
+        if (controller == null) {
+            session.asyncRemote.sendText("Invalid game id")
+            return
+        }
+
+        controller.registerClient(joinCode, session.id) { session.asyncRemote.sendObject(it) }
     }
 
     @OnMessage
-    fun onMessage(session: Session, message: String) {
-        proxy.onMessage(message)
+    fun onMessage(@PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String, message: WsClientMessage) {
+        matches[gameId]?.onMessage(joinCode, message)
     }
 
     @OnClose
-    fun onClose(session: Session) {
-        proxy.onClose(channel)
+    fun onClose(session: Session, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String) {
+        matches[gameId]?.unregisterClient(joinCode, session.id)
+    }
+
+    @OnError
+    fun onError(session: Session, error: Throwable, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String) {
+        when (error) {
+            is JsonParseException -> {
+                log.debug("Invalid json message for match ws endpoint", error)
+                session.asyncRemote.sendObject(WsServerMessage.Error("Invalid JSON message received"))
+            }
+            is CloseException -> log.debug("Close in ws match communication", error)
+            else -> {
+                log.info("Error in game ws: ", error)
+                session.asyncRemote.sendObject(WsServerMessage.Error("Error while processing message"))
+            }
+        }
     }
 
 }
