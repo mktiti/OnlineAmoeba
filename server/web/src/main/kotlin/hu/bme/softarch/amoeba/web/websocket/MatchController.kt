@@ -4,7 +4,7 @@ import hu.bme.softarch.amoeba.game.MapField
 import hu.bme.softarch.amoeba.game.MutableField
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
-import hu.bme.softarch.amoeba.web.websocket.WsServerMessage.OpponentEvent
+import hu.bme.softarch.amoeba.web.websocket.WsServerMessage.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -71,18 +71,18 @@ class MatchController(fullGame: FullGame) {
                 placeLock.withLock {
                     val next = waitingFor
                     if (next == null) {
-                        send(player, WsServerMessage.Error("Game already finished"))
+                        send(player, Error("Game already finished"))
                         return
                     }
 
                     if (waitingFor != player) {
-                        send(player, WsServerMessage.Error("Not your turn"))
+                        send(player, Error("Not your turn"))
                     } else {
                         if (gameField[message.position] == null) {
                             val winRow = gameField.set(message.position, player)
-                            send(WsServerMessage.NewPoint(player, message.position))
+                            send(NewPoint(player, message.position))
                             waitingFor = if (winRow != null) {
-                                send(OpponentEvent("$player won!"))
+                                send(GameResult(player, winRow))
                                 null
                             } else {
                                 !next
@@ -94,10 +94,10 @@ class MatchController(fullGame: FullGame) {
                 }
             }
             is WsClientMessage.PartScanRequest -> {
-                send(player, WsServerMessage.FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
+                send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
             }
             is WsClientMessage.FullScanRequest -> {
-                send(player, WsServerMessage.FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
+                send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
             }
         }
     }
@@ -106,7 +106,7 @@ class MatchController(fullGame: FullGame) {
         data(player).outChannels[channelId] = channel
 
         send(OpponentEvent("New client joined for $player"))
-        channel(WsServerMessage.Info(player, waitingFor))
+        channel(Info(player, waitingFor))
     }
 
     private fun removeChannel(player: Sign, channelId: String) {

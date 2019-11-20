@@ -48,9 +48,15 @@ sealed class WsServerMessage {
             val position: Pos
     ) : WsServerMessage()
 
-    @JsonTypeName("opponent-event")
+    @JsonTypeName("event")
     data class OpponentEvent(
             val event: String
+    ) : WsServerMessage()
+
+    @JsonTypeName("game-result")
+    data class GameResult(
+            val sign: Sign,
+            val row: List<Pos>
     ) : WsServerMessage()
 
     @JsonTypeName("error")

@@ -58,7 +58,7 @@ class MatchClientController {
     }
 
     @OnError
-    fun onError(session: Session, error: Throwable, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String) {
+    fun onError(session: Session, error: Throwable) {
         when (error) {
             is JsonParseException -> {
                 log.debug("Invalid json message for match ws endpoint", error)
