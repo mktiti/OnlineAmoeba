@@ -1,6 +1,6 @@
 package hu.bme.softarch.amoeba.web.db
 
-import hu.bme.softarch.amoeba.web.FullGame
+import hu.bme.softarch.amoeba.web.api.FullGame
 
 interface GameRepo {
 

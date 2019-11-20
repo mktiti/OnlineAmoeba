@@ -2,7 +2,15 @@ package hu.bme.softarch.amoeba.game
 
 import java.math.BigInteger
 
-enum class Sign { X, O }
+enum class Sign {
+    X, O;
+
+    operator fun not() = when (this) {
+        X -> O
+        O -> X
+    }
+
+}
 
 data class Pos(
     val x: BigInteger,

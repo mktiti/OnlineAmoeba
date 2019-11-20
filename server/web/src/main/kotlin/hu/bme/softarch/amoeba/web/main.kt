@@ -4,19 +4,17 @@ import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
 import hu.bme.softarch.amoeba.game.web.generated.ProjectInfo
-import hu.bme.softarch.amoeba.web.Server.startServer
-import java.nio.file.Paths
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import hu.bme.softarch.amoeba.web.api.GameHandler
+import hu.bme.softarch.amoeba.web.api.NewGameData
+import hu.bme.softarch.amoeba.web.util.Server.startServer
+import hu.bme.softarch.amoeba.web.util.setLogLocation
 import kotlin.system.exitProcess
 
 class Arguments(parser: ArgParser) {
 
     val version by parser.flagging("-v", "--version", help = "Prints the version")
 
-    val webPort by parser.storing("-p", "--port", help = "Port for hosting client, default: 8080", transform = String::toInt).default(8080)
-
-    val port by parser.storing("-w", "--ws-port", help = "Port for web socket connections, default: 8080", transform = String::toInt).default(8080)
+    val port by parser.storing("-p", "--port", help = "TCP port to use, default: 8080", transform = String::toInt).default(8080)
 
     val clientDir by parser.storing("-c", "--client", help = "Path to host client from").default<String?>(null)
 
@@ -33,7 +31,13 @@ fun main(args: Array<String>) = mainBody {
 
         setLogLocation(logLocation)
 
-        startServer(port, webPort, clientDir)
+        val testHandler = GameHandler()
+        val game = testHandler.createInternal(NewGameData(tilesToWin = 5))
+        val clientJoin = testHandler.joinInternal(game.inviteCode)?.clientJoinCode
+
+        println("Test game ready: Id: ${game.id}, host join: ${game.hostJoinCode}, client join: $clientJoin")
+
+        startServer(port, clientDir)
 
     }
 }
