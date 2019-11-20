@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.api
 
 import hu.bme.softarch.amoeba.game.Pos
 import java.time.LocalDateTime
@@ -19,6 +19,6 @@ data class GameData(
 )
 
 data class FullGame(
-    val info: GameInfo,
-    val data: GameData
+        val info: GameInfo,
+        val data: GameData
 )

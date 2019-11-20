@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.util
 
 object CodeGenerator {
 

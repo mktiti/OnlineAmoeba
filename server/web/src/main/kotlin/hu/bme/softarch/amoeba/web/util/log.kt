@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.util
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

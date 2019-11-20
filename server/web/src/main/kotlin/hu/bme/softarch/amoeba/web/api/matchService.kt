@@ -1,5 +1,6 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.api
 
+import hu.bme.softarch.amoeba.web.util.entity
 import javax.inject.Singleton
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
@@ -15,16 +16,22 @@ class GameHandler {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     fun create(params: NewGameData) = entity {
+        createInternal(params)
+    }
+
+    internal fun createInternal(params: NewGameData): CreatedGameData {
         val game = lobbyService.createGame(params.tilesToWin)
         val invite = inviteStore.addGame(game)
 
-        CreatedGameData(id = game.id, inviteCode = invite, hostJoinCode = game.xPass)
+        return CreatedGameData(id = game.id, inviteCode = invite, hostJoinCode = game.xPass)
     }
 
     @GET
     @Path("/{invite}")
     fun join(@PathParam("invite") invite: String) = entity {
-        inviteStore.fetch(invite)?.oPass
+        joinInternal(invite)
     }
+
+    internal fun joinInternal(invite: String): GameJoinData? = inviteStore.fetch(invite)?.oPass?.let(::GameJoinData)
 
 }

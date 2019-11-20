@@ -1,5 +1,6 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.api
 
+import hu.bme.softarch.amoeba.web.util.CodeGenerator
 import java.util.concurrent.locks.ReentrantLock
 
 interface InviteStore {

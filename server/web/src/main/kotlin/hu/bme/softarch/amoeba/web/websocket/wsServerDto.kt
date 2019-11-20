@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.websocket
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName

@@ -1,20 +1,26 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.util
 
+import hu.bme.softarch.amoeba.web.websocket.MatchClientController
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.glassfish.jersey.servlet.ServletContainer
+import java.nio.file.Paths
 
 object Server {
 
     private val log by logger()
 
-    fun startServer(wsPort: Int = 8080, webPort: Int = 8080, clientDir: String? = null) {
-        log.info("Starting server: Web port: $webPort, WebSocket port: $wsPort, client hosted from: $clientDir")
+    fun startServer(port: Int = 8080, clientDir: String? = null) {
+        log.info("===Starting server===")
+        log.info("\tPort: $port")
+        if (clientDir != null) {
+            log.info("\tClient hosted from: ${Paths.get(clientDir).toAbsolutePath()}")
+        }
 
-        val jettyServer = Server(webPort)
+        val jettyServer = Server(port)
 
         ServletContextHandler(ServletContextHandler.NO_SESSIONS).apply {
             contextPath = "/"
@@ -35,7 +41,7 @@ object Server {
                 initOrder = 0
                 setInitParameter(
                         "jersey.config.server.provider.packages",
-                        "hu.bme.softarch.amoeba.web, org.codehaus.jackson.jaxrs, org.glassfish.jersey.examples.multipart"
+                        "hu.bme.softarch.amoeba.web.api, org.codehaus.jackson.jaxrs, org.glassfish.jersey.examples.multipart"
                 )
                 setInitParameter(
                         "jersey.config.server.provider.classnames",

@@ -1,5 +1,6 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.web.api
 
+import hu.bme.softarch.amoeba.web.util.CodeGenerator
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
@@ -21,11 +22,8 @@ object InMemLobbyService : LobbyService {
             id = idCounter.getAndIncrement(),
             toWin = tilesToWin,
             createdAt = LocalDateTime.now(),
-            //xPass = CodeGenerator.generate(10),
-            //oPass = CodeGenerator.generate(10)
-
-            xPass = "asd",
-            oPass = "123"
+            xPass = CodeGenerator.generate(10),
+            oPass = CodeGenerator.generate(10)
     ).apply {
         games[id] = FullGame(this, GameData())
     }
