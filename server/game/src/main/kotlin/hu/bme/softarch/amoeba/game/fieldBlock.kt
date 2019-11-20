@@ -6,6 +6,8 @@ internal interface FieldBlock {
 
     operator fun get(pos: LocalPos): Sign?
 
+    fun positionsOf(sign: Sign): Collection<LocalPos>
+
 }
 
 internal fun FieldBlock.toLocal(pos: Pos): LocalPos
@@ -20,6 +22,8 @@ internal class EmptyBlock(
 ) : FieldBlock {
 
     override fun get(pos: LocalPos): Sign? = null
+
+    override fun positionsOf(sign: Sign) = emptyList<LocalPos>()
 
 }
 
@@ -44,5 +48,7 @@ internal class MapFieldBlock(
     override fun set(pos: LocalPos, sign: Sign) {
         data[pos] = sign
     }
+
+    override fun positionsOf(sign: Sign) = data.filter { it.value == sign }.map { it.key }
 
 }
