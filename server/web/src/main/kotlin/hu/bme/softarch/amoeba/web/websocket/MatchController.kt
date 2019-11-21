@@ -94,7 +94,11 @@ class MatchController(fullGame: FullGame) {
                 }
             }
             is WsClientMessage.PartScanRequest -> {
-                send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
+                send(player, PartScanResponse(
+                        bounds = message.range,
+                        xs = gameField.positionsOf(Sign.X, message.range),
+                        os = gameField.positionsOf(Sign.O, message.range)
+                ))
             }
             is WsClientMessage.FullScanRequest -> {
                 send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))

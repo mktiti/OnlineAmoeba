@@ -2,18 +2,9 @@ package hu.bme.softarch.amoeba.web.websocket
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
+import hu.bme.softarch.amoeba.game.FieldRange
 import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
-
-data class ScanBound(
-        val min: Long,
-        val max: Long
-)
-
-data class ScanBounds(
-        val x: ScanBound,
-        val y: ScanBound
-)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 sealed class WsServerMessage {
@@ -33,7 +24,7 @@ sealed class WsServerMessage {
     class PartScanResponse(
             xs: Collection<Pos>,
             os: Collection<Pos>,
-            val bounds: ScanBounds
+            val bounds: FieldRange
     ) : ScanResponse(xs, os)
 
     @JsonTypeName("full-scan")

@@ -3,6 +3,7 @@ package hu.bme.softarch.amoeba.web.websocket
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
+import hu.bme.softarch.amoeba.game.FieldRange
 import hu.bme.softarch.amoeba.game.Pos
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -23,8 +24,7 @@ sealed class WsClientMessage {
 
     @JsonTypeName("part-scan")
     data class PartScanRequest(
-            val x: ScanBound,
-            val y: ScanBound
+            val range: FieldRange
     ) : WsClientMessage()
 
 }
