@@ -1,5 +1,5 @@
-/******************************************
- *  Author : Patrik Purgai   
+ 
+/*******************************************
  *  Created On : Sat Oct 26 2019
  *  File : game.js
  *******************************************/
@@ -7,366 +7,189 @@
 "use strict";
 
 
-const WIDTH = 31;
-const HEIGHT = 31;
+const UNIT = 40;  // size of the unit rectangle
+const DELTA = 16; // fps ( 16 is roughly 60fps )
+const SPEED = 10; // speed of the movement
+const PROP = 0.2; // proportion of the shape frame 
+
+const OFFSET = UNIT * PROP;
 
 
 /**
- * Possible states of a cell.
- * @enum {string}
+ * Draws a circle around the provided coordinates. 
  */
-const CellState = {
-    CROSS: 'X', 
-    CIRCLE: 'O', 
-    EMPTY: 'EMPTY'
+const draw_circle = (top, left, ctx) => {
+    ctx.beginPath();
+    ctx.arc(
+        top + (UNIT / 2),
+        left + (UNIT / 2),
+        (UNIT - OFFSET) * 0.8 / 2,  0, 2 * Math.PI);
+    ctx.stroke();
 };
 
 
 /**
- * Possible messages from the server.
- * @enum {string}
+ * Draws a cross in the box given by the coordinates.
  */
-const MessageType = {
-    FULLSCAN: 'fullscan', 
-    NEWPOINT: 'newpoint'
+const draw_cross = (top, left, ctx) => {
+    ctx.beginPath();
+    ctx.moveTo(top + OFFSET, left + OFFSET);
+    ctx.lineTo(top + UNIT - OFFSET, left + UNIT - OFFSET);
+    
+    ctx.moveTo(top + OFFSET, left + UNIT - OFFSET);
+    ctx.lineTo(top + UNIT - OFFSET, left + OFFSET);
+    ctx.stroke();
 };
-
-
-/**
- * Stores an `x` and `y` NumberPair.
- */
-class NumberPair {
-
-    /**
-     * @param {number} x
-     * @param {number} y
-     */
-    constructor(x, y) {
-        /** @public @const {number} */
-        this.x = x;
-
-        /** @public @const {number} */
-        this.y = y;
-    }
-
-    /**
-     * Computes whether the NumberPair is inside
-     * the given rectangle.
-     * @param {!NumberPair} top_left
-     * @param {!NumberPair} dims
-     */
-    isInside(top_left, dims) {
-        return (
-            top_left.x <= this.x &&
-            top_left.x - dims.x >= this.x &&
-            top_left.y >= this.y &&
-            top_left.y - dims.y <= this.y
-        )
-    }
-}
-
-
-class QuadTree {
-
-}
-
+    
 
 /**
- * Stores the player's move.
+ * Draws the field based on the provided `location`
+ * (screen middle) coordinates.
  */
-class Move {
+const draw = (location, ctx, canvas, field) => {
+    const n_hor = Math.ceil(canvas.width / UNIT);
+    const n_ver = Math.ceil(canvas.height / UNIT);
+    
+    // these values store the cell which is
+    // currently targeted by the camera 
+    const x = location.x > 0 ?
+        Math.floor(location.x / UNIT) :
+        Math.ceil(location.x / UNIT);
 
-    /**
-     * @param {!NumberPair} coord Location of the move.
-     * @param {!CellState} state State of the move.
-     */
-    constructor(coord, player) {
-        /** @public @type {!NumberPair} */
-        this.coord = coord;
+    const y = location.y > 0 ?
+        Math.floor(location.y / UNIT) :
+        Math.ceil(location.y / UNIT);
+          
+    // offsets are the value by which the grid is shifted
+    // in a direction for continuous movement 
+    const x_offset = UNIT - location.x % UNIT;
+    const y_offset = UNIT - location.y % UNIT;
 
-        /** @public @type {!CellState} */
-        this.player = player;
-    }
-}
+    ctx.beginPath();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.stroke();
+    
+    // offset to place the 0, 0 point in the middle of
+    // the screen 
+    const x_middle = Math.floor(n_hor / 2) + x + 1 
+    const y_middle = Math.floor(n_ver / 2) + y + 1
 
+    for (let i = 0; i <= n_hor; i++) {
+        for (let j = 0; j <= n_ver + 1; j++) {
+            const top = (j * UNIT) - y_offset; 
+            const left = (i  * UNIT) - x_offset;
+           
+            ctx.beginPath();
+            ctx.rect(left, top, UNIT, UNIT);
+            ctx.stroke();
 
-/**
- * Stores the state of a cell.
- */
-class Cell {
+            const coord = [i - x_middle , -j + y_middle];
 
-    /**
-     * @param {!NumberPair} coord Coordinates of the cell.
-     * @param {!NumberPair} dims Dimensions of the cell.
-     */
-    constructor(coord, dims) {
-        /** @public @type {!NumberPair} */
-        this.coord = coord;
-
-        /** @public @type {!NumberPair} */
-        this.dims = dims;
-
-        /** @public @type {!CellState} */
-        this.state = CellState.EMPTY;
-    }
-
-    /**
-     * @param {HTMLElement} context
-     * @param {number} row_idx Row index of the cell.
-     * @param {number} col_idx Column index of the cell.
-     */
-    draw(context, row_idx, col_idx) {
-        const top_left = new NumberPair(
-            this.dims.x * col_idx,
-            this.dims.y * row_idx
-        );
-
-        switch (this.state) {
-            case CellState.EMPTY:
-                draw_empty(context, top_left, this.dims);
-                break;
-
-            case CellState.CIRCLE:
-                draw_cricle(context, top_left, this.dims);
-                break;
-
-            case CellState.CROSS:
-                draw_cross(context, top_left, this.dims);
-                break;
-        }
-    }
-}
-
-
-function draw_empty(context, top_left, dims) {
-    context.lineWidth = '1';
-    context.strokeStyle = 'black';
-    context.rect(top_left.x, top_left.y, dims.x, dims.y);
-}
-
-
-function draw_cross(context, top_left, dims) {
-    context.lineWidth = '1';
-    context.strokeStyle = 'red';
-    context.fillRect(top_left.x, top_left.y, dims.x, dims.y);
-}
-
-
-function draw_cricle(context, top_left, dims) {
-    context.lineWidth = '1';
-    context.strokeStyle = 'blue';
-    context.fillRect(top_left.x, top_left.y, dims.x, dims.y);
-}
-
-
-/**
- * Represents the visible board.
- */
-class Board {
-
-    /**
-     * @param {!number} rows Number of cells in a row.
-     * @param {!number} cols Number of cells in a column.
-     * @param {!HTMLElement} canvas
-     */
-    constructor(rows, cols, canvas) {
-        /** @public @type {!number} */
-        this.rows = rows;
-
-        /** @public @type {!number} */
-        this.cols = cols;
-
-        /** @public @type {Array<Array<Cell>>} */
-        this.cells = undefined;
-
-        /** @public @const {HTMLElement}*/
-        this.canvas = canvas;
-
-        /** @public @const {object}*/
-        this.context = canvas.getContext('2d');
-
-        /** @public @type {NumberPair}*/
-        this.cell_dims = new NumberPair(
-            this.canvas.width / this.cols,
-            this.canvas.height / this.rows
-        );
-
-        this.init(new NumberPair((rows - 1) / 2, (cols - 1) / 2));
-    }
-
-    /**
-     * Returns the board to initial state.
-     * @param {!NumberPair} offset The offset of the board.
-     */
-    init(offset) {
-        this.cells = [];
-
-        for (let x = offset.x; x > offset.x - this.cols; x--) {
-            let row = new Array();
-
-            for (let y = offset.y; y > offset.y - this.rows; y--)
-                row.push(new Cell(new NumberPair(x, y), this.cell_dims));
-
-            this.cells.push(row);
-        }
-    }
-
-    /**
-     * @param {!NumberPair} offset Upper left coord of the board.
-     * @param {!Array<Move>} moves Array of the player moves.
-     */
-    update(offset, moves) {
-        this.init(offset);
-
-        let bottom_right = new NumberPair(
-            offset.x - this.cols,
-            offset.y - this.rows
-        );
-
-        moves.forEach((move) => {
-            const x = move.x - offset.x;
-            const y = move.y - offset.y;
-
-            if (coord.isInsideBoundary(offset))
-                this.cells[x][y].state = move.state;
-        });
-    }
-
-    /**
-     * Draws the whole board.
-     */
-    draw() {
-        this.context.beginPath();
-
-        this.cells.forEach((rows, row_idx) => {
-            rows.forEach((cell, col_idx) => {
-                cell.draw(this.context, row_idx, col_idx);
-            });
-        });
-
-        this.context.stroke();
-    }
-
-    /**
-     * Updates and draws a single cell.
-     * @param {NumberPair} coord Coordinate of the cell.
-     * @param {CellState} state New state of the cell.
-     */
-    updateCell(coord, state) {
-        let cell = this.cells[coord.x][coord.y];
-        cell.state = state;
-
-        this.context.beginPath();
-        cell.draw(this.canvas, this.context);
-        this.context.stroke();
-    }
-
-    /**
-     * Converts click coordinates to board coordinates.
-     * @param {NumberPair} click Coordinate of the click.
-     * @return {NumberPair} Coordinate of the cell on board.
-     */
-    convertClick(click) {
-        return new NumberPair(
-            Math.floor(click.x / this.cell_dims.x),
-            Math.floor(click.y / this.cell_dims.y)
-        );
-    }
-}
-
-
-class Game {
-
-    /**
-     * @param {string} address Address of the ws service.
-     */
-    constructor(address) {
-        /** @public @const {HTMLElement}*/
-        this.canvas = document.getElementById('canvas');
-
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-
-        /** @public @const {WebSocket}*/
-        // this.socket = new WebSocket(address);
-        
-        /** @public @const {Board}*/
-        this.board = new Board(HEIGHT, WIDTH, this.canvas);
-        this.board.draw();
-
-        /** @public @type {Player}*/
-        this.player = undefined;
-
-        /** @public @type {Player}*/
-        this.opponent = undefined;
-
-        /** @public @type {boolean}*/
-        this.is_active_turn = false;
-    }
-
-    /** 
-     * @return {!Iterator<Move>} 
-     */
-    * generateMoves() {
-        for (const move of this.player.moves)
-            yield move;
-
-        for (const move of this.opponent.moves)
-            yield move;
-    }
-
-    /**
-     * @param {object} players_data
-     */
-    initializePlayers(players_data) {
-        this.player = new Player()
-    }
-
-    registerCanvasEventHandlers() {
-        this.canvas.onmousedown = (event) => {
-            const click = new NumberPair(
-                event.clientX, 
-                event.clientY
-            );
-
-            console.log(this.board.convertClick(click));
-        };
-
-        this.canvas.onmousemove = (event) => {
-
-        };
-
-        this.canvas.onmouseout = (event) => {
-
-        };
-
-        this.canvas.onmouseup = (event) => {
-
-        };
-    }
-
-    registerSocketEventHandlers() {
-        this.socket.onmessage = (message) => {
-            let json_message = JSON.parse(message);
-        
-            switch (json_message['type']) {
-                case MessageType.FULLSCAN:
+            switch (field.get(as_string(coord))) {
+                case 'X':
+                    draw_cross(left, top, ctx);
                     break;
 
-                case MessageType.NEWPOINT:
-                    break;
-
-                default:
+                case 'O':
+                    draw_circle(left, top, ctx);
                     break;
             }
-        };
+        }
     }
-}
+};
 
 
-window.addEventListener('load', function() {
-    const game = new Game();
+/**
+ * Creates the update callback function.
+ */
+const createUpdate = (mouse, ctx, canvas, field) => {
+    let prev_time = new Date().getTime();
+    let time = 0;
+    
+    // *_move variables determine the bounding box
+    // in which the mouse will cause the screen
+    // to move in that direction
+    const is_moving_right = () => {
+        return (mouse.x > canvas.width * 0.8) && 
+            (mouse.x < canvas.width * 0.98);   
+    };
 
-    game.registerCanvasEventHandlers();
-    game.registerSocketEventHandlers();
+    const is_moving_left = () => {
+        return (mouse.x < canvas.width * 0.2) &&
+            (mouse.x > canvas.width * 0.02);
+    };
+
+    const is_moving_top = () => {
+        return (mouse.y < canvas.height * 0.2) && 
+            (mouse.y > canvas.height * 0.02);
+    };
+
+    const is_moving_bottom = () => {
+        return (mouse.y > canvas.height * 0.8) &&
+            (mouse.y < canvas.height * 0.98);
+    };
+
+    let location = {x: 0, y: 0};
+
+    return () => {
+        canvas.width = window.innerWidth - 30;
+        canvas.height = window.innerHeight - 50;
+        
+        const curr_time = new Date().getTime();
+        const dt = curr_time - prev_time; 
+        prev_time = curr_time;
+
+        time += dt;
+        // updating at every 16th milisecond is
+        // roughly equal to 60 frames / second
+        if (time > DELTA) {
+            time = 0;
+
+            if (is_moving_right())
+                location.x -= SPEED;     
+
+            if (is_moving_left())
+                location.x += SPEED; 
+
+            if (is_moving_top())
+                location.y += SPEED;
+
+            if (is_moving_bottom())
+                location.y -= SPEED;
+  
+            let left = Math.floor(location.x / UNIT);
+            let top = Math.floor(location.y / UNIT);
+            
+            draw(location, ctx, canvas, field);
+        }
+    };
+};
+
+
+const as_string = (coordinates) => {
+    return `${coordinates[0]}:${coordinates[1]}`;
+};
+
+
+window.addEventListener('load', () => {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let mouse = {x: 0, y: 0};
+
+    canvas.onmousemove = (e) => {
+        let rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+    };
+
+    const field = new Map([
+        [as_string([0, 0]), 'X'],
+        [as_string([1, 2]), 'O']  
+    ]);
+
+    const update = createUpdate(mouse, ctx, canvas, field);
+    this.setInterval(update, 60);
+    
 });
+
