@@ -8,21 +8,24 @@
 
 
 const UNIT = 40;  // size of the unit rectangle
-const DELTA = 16; // fps ( 16 is roughly 60fps )
-const SPEED = 10; // speed of the movement
+const DELTA = 10; // fps ( 16 is roughly 60fps )
+const SPEED = 6; // speed of the movement
 const PROP = 0.2; // proportion of the shape frame 
 
 const OFFSET = UNIT * PROP;
+
+// global variable to store if mouse is inside screen
+let is_inside = true;
 
 
 /**
  * Draws a circle around the provided coordinates. 
  */
-const draw_circle = (top, left, ctx) => {
+const draw_circle = (left, top, ctx) => {
     ctx.beginPath();
     ctx.arc(
-        top + (UNIT / 2),
         left + (UNIT / 2),
+        top + (UNIT / 2),
         (UNIT - OFFSET) * 0.8 / 2,  0, 2 * Math.PI);
     ctx.stroke();
 };
@@ -31,13 +34,13 @@ const draw_circle = (top, left, ctx) => {
 /**
  * Draws a cross in the box given by the coordinates.
  */
-const draw_cross = (top, left, ctx) => {
+const draw_cross = (left, top, ctx) => {
     ctx.beginPath();
-    ctx.moveTo(top + OFFSET, left + OFFSET);
-    ctx.lineTo(top + UNIT - OFFSET, left + UNIT - OFFSET);
+    ctx.moveTo(left + OFFSET, top + OFFSET);
+    ctx.lineTo(left + UNIT - OFFSET, top + UNIT - OFFSET);
     
-    ctx.moveTo(top + OFFSET, left + UNIT - OFFSET);
-    ctx.lineTo(top + UNIT - OFFSET, left + OFFSET);
+    ctx.moveTo(left + OFFSET, top + UNIT - OFFSET);
+    ctx.lineTo(left + UNIT - OFFSET, top + OFFSET);
     ctx.stroke();
 };
     
@@ -68,13 +71,13 @@ const draw = (location, ctx, canvas, field) => {
     ctx.beginPath();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.stroke();
-    
+
     // offset to place the 0, 0 point in the middle of
     // the screen 
     const x_middle = Math.floor(n_hor / 2) + x + 1 
     const y_middle = Math.floor(n_ver / 2) + y + 1
 
-    for (let i = 0; i <= n_hor; i++) {
+    for (let i = 0; i <= n_hor + 1; i++) {
         for (let j = 0; j <= n_ver + 1; j++) {
             const top = (j * UNIT) - y_offset; 
             const left = (i  * UNIT) - x_offset;
@@ -110,59 +113,56 @@ const createUpdate = (mouse, ctx, canvas, field) => {
     // in which the mouse will cause the screen
     // to move in that direction
     const is_moving_right = () => {
-        return (mouse.x > canvas.width * 0.8) && 
-            (mouse.x < canvas.width * 0.98);   
+        return (mouse.x > canvas.width * 0.8);
     };
 
     const is_moving_left = () => {
-        return (mouse.x < canvas.width * 0.2) &&
-            (mouse.x > canvas.width * 0.02);
+        return (mouse.x < canvas.width * 0.2);
     };
 
     const is_moving_top = () => {
-        return (mouse.y < canvas.height * 0.2) && 
-            (mouse.y > canvas.height * 0.02);
+        return (mouse.y < canvas.height * 0.2);
     };
 
     const is_moving_bottom = () => {
-        return (mouse.y > canvas.height * 0.8) &&
-            (mouse.y < canvas.height * 0.98);
+        return (mouse.y > canvas.height * 0.8);
     };
 
     let location = {x: 0, y: 0};
 
-    return () => {
+    const update = () => {
         canvas.width = window.innerWidth - 30;
         canvas.height = window.innerHeight - 50;
-        
+
         const curr_time = new Date().getTime();
         const dt = curr_time - prev_time; 
         prev_time = curr_time;
-
+            
         time += dt;
         // updating at every 16th milisecond is
         // roughly equal to 60 frames / second
         if (time > DELTA) {
             time = 0;
 
-            if (is_moving_right())
-                location.x -= SPEED;     
+            if (is_moving_right() && is_inside)
+                location.x -= SPEED;
 
-            if (is_moving_left())
+            else if (is_moving_left() && is_inside)
                 location.x += SPEED; 
 
-            if (is_moving_top())
+            if (is_moving_top() && is_inside)
                 location.y += SPEED;
 
-            if (is_moving_bottom())
+            else if (is_moving_bottom() && is_inside)
                 location.y -= SPEED;
-  
-            let left = Math.floor(location.x / UNIT);
-            let top = Math.floor(location.y / UNIT);
-            
+           
             draw(location, ctx, canvas, field);
         }
+
+        window.requestAnimationFrame(update);
     };
+
+    return update;
 };
 
 
@@ -174,6 +174,7 @@ const as_string = (coordinates) => {
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const socket = new WebSocket();
 
     let mouse = {x: 0, y: 0};
 
@@ -182,14 +183,22 @@ window.addEventListener('load', () => {
         mouse.x = e.clientX - rect.left;
         mouse.y = e.clientY - rect.top;
     };
+    
+    canvas.onmouseout = () => {
+        is_inside = false; 
+    };
 
+    canvas.onmouseenter = () => {
+        is_inside = true; 
+    };
+  
     const field = new Map([
         [as_string([0, 0]), 'X'],
-        [as_string([1, 2]), 'O']  
+        [as_string([1, 2]), 'O'],
+        [as_string([0, 4]), 'O']
     ]);
 
     const update = createUpdate(mouse, ctx, canvas, field);
-    this.setInterval(update, 60);
-    
+    window.requestAnimationFrame(update);
 });
 
