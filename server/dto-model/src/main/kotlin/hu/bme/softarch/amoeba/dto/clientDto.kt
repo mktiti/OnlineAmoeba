@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web.websocket
+package hu.bme.softarch.amoeba.dto
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName
 import hu.bme.softarch.amoeba.game.FieldRange
 import hu.bme.softarch.amoeba.game.Pos
 
+@Suppress("unused")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
         JsonSubTypes.Type(WsClientMessage.PutNew::class),

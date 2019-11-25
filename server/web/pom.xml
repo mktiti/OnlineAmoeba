@@ -16,14 +16,17 @@
     <properties>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <jersey.version>2.27</jersey.version>
-        <jackson.version>2.9.0</jackson.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>hu.bme.softarch</groupId>
             <artifactId>game</artifactId>
-            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>hu.bme.softarch</groupId>
+            <artifactId>dto-model</artifactId>
         </dependency>
 
         <dependency>
@@ -95,13 +98,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-json-provider</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>

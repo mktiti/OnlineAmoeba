@@ -1,10 +1,12 @@
 package hu.bme.softarch.amoeba.web.websocket
 
+import hu.bme.softarch.amoeba.dto.WsClientMessage
+import hu.bme.softarch.amoeba.dto.WsServerMessage
+import hu.bme.softarch.amoeba.dto.WsServerMessage.*
 import hu.bme.softarch.amoeba.game.MapField
 import hu.bme.softarch.amoeba.game.MutableField
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
-import hu.bme.softarch.amoeba.web.websocket.WsServerMessage.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
