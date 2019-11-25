@@ -7,7 +7,7 @@
 "use strict";
 
 
-const UNIT = 40;  // size of the unit rectangle
+const UNIT = 50;  // size of the unit rectangle
 const DELTA = 10; // fps ( 16 is roughly 60fps )
 const SPEED = 6; // speed of the movement
 const PROP = 0.2; // proportion of the shape frame 
@@ -16,6 +16,17 @@ const OFFSET = UNIT * PROP;
 
 // global variable to store if mouse is inside screen
 let is_inside = true;
+
+const REST_URL = 'localhost:port/api/matches'; 
+const WS_URL = 'ws://localhost:port/game/{id}/{joinCode}'
+
+// {"type": "put", "position": {"x": 10, "y": 5}} 
+// 
+//
+//
+//
+//
+//
 
 
 /**
@@ -43,30 +54,84 @@ const draw_cross = (left, top, ctx) => {
     ctx.lineTo(left + UNIT - OFFSET, top + OFFSET);
     ctx.stroke();
 };
+
+/**
+ * Computes the offset of the field.
+ */
+const computeOffset = (pos) => {
+    return {
+        x: UNIT - pos.x % UNIT,
+        y: UNIT - pos.y % UNIT
+    };
+};
+
+
+/**
+ * Computes the the coordinate of targeted cell.
+ */
+const computeAbsoluteCoord = (pos) => {
+    // these values store the cell which is
+    // currently targeted by the camera 
+    const x = pos.x > 0 ?
+        Math.floor(pos.x / UNIT) :
+        Math.ceil(pos.x / UNIT);
+
+    const y = pos.y > 0 ?
+        Math.floor(pos.y / UNIT) :
+        Math.ceil(pos.y / UNIT); 
+    
+    return {x: x, y: y};
+};
+
+
+/**
+ * Computes the number of cell horizontaly and verticaly.
+ */
+const computeSize = (canvas) => {
+    return {
+        w: Math.ceil(canvas.width / UNIT),
+        h: Math.ceil(canvas.height / UNIT)
+    };
+};
+
+
+/**
+ * Computes the coordinates of the currently targeted
+ * cell by the mouse.
+ */
+const computeRelativeCoord = (mouse, pos, canvas) => {
+    const offset = computeOffset(pos);
+    const size = computeSize(canvas);
+    const abs = computeAbsoluteCoord(pos);
+
+    // shifting back the location of the mouse by the
+    // offset of the cells 
+    const x_mouse = Math.floor(
+        (mouse.x + offset.x - (UNIT * 0.25)) / UNIT);
+    const y_mouse = Math.floor(
+        (mouse.y + offset.y - (UNIT * 0.1)) / UNIT);
+  
+    // shifting the coordinate to the middle
+    const x_shift = Math.floor(size.w / 2) + abs.x + 1;
+    const y_shift = Math.floor(size.h / 2) + abs.y + 1;
+    return {
+        x: x_mouse - x_shift, 
+        y: -(y_mouse - y_shift)
+    };
+};
     
 
 /**
  * Draws the field based on the provided `location`
  * (screen middle) coordinates.
  */
-const draw = (location, ctx, canvas, field) => {
-    const n_hor = Math.ceil(canvas.width / UNIT);
-    const n_ver = Math.ceil(canvas.height / UNIT);
-    
-    // these values store the cell which is
-    // currently targeted by the camera 
-    const x = location.x > 0 ?
-        Math.floor(location.x / UNIT) :
-        Math.ceil(location.x / UNIT);
+const draw = (pos, ctx, canvas, field, selected) => {
+    const size = computeSize(canvas);
 
-    const y = location.y > 0 ?
-        Math.floor(location.y / UNIT) :
-        Math.ceil(location.y / UNIT);
-          
     // offsets are the value by which the grid is shifted
     // in a direction for continuous movement 
-    const x_offset = UNIT - location.x % UNIT;
-    const y_offset = UNIT - location.y % UNIT;
+    const offset = computeOffset(pos);
+    const abs = computeAbsoluteCoord(pos);
 
     ctx.beginPath();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -74,20 +139,29 @@ const draw = (location, ctx, canvas, field) => {
 
     // offset to place the 0, 0 point in the middle of
     // the screen 
-    const x_middle = Math.floor(n_hor / 2) + x + 1 
-    const y_middle = Math.floor(n_ver / 2) + y + 1
-
-    for (let i = 0; i <= n_hor + 1; i++) {
-        for (let j = 0; j <= n_ver + 1; j++) {
-            const top = (j * UNIT) - y_offset; 
-            const left = (i  * UNIT) - x_offset;
-           
+    const x_shift = Math.floor(size.w / 2) + abs.x + 1;
+    const y_shift = Math.floor(size.h / 2) + abs.y + 1;
+    
+    for (let i = 0; i <= size.w + 1; i++) {
+        for (let j = 0; j <= size.h + 1; j++) {
+            const top = (j * UNIT) - offset.y;
+            const left = (i  * UNIT) - offset.x;
+            
+          const coord = {x: i - x_shift ,y: -j + y_shift};
+            
+            // drawing the highlighted cell
+            if (coord.x == selected.x && 
+                    coord.y == selected.y) {
+                ctx.beginPath();
+                ctx.fillStyle = '#d3d3d3';
+                ctx.fillRect(left, top, UNIT, UNIT);
+                ctx.stroke();
+            } 
+            
             ctx.beginPath();
             ctx.rect(left, top, UNIT, UNIT);
             ctx.stroke();
-
-            const coord = [i - x_middle , -j + y_middle];
-
+            
             switch (field.get(as_string(coord))) {
                 case 'X':
                     draw_cross(left, top, ctx);
@@ -105,34 +179,35 @@ const draw = (location, ctx, canvas, field) => {
 /**
  * Creates the update callback function.
  */
-const createUpdate = (mouse, ctx, canvas, field) => {
+const createUpdate = (
+        pos, mouse, canvas, field, selected) => {
     let prev_time = new Date().getTime();
     let time = 0;
+
+    const ctx = canvas.getContext('2d');
     
     // *_move variables determine the bounding box
     // in which the mouse will cause the screen
     // to move in that direction
     const is_moving_right = () => {
-        return (mouse.x > canvas.width * 0.8);
+        return (mouse.x > canvas.width * 0.85);
     };
 
     const is_moving_left = () => {
-        return (mouse.x < canvas.width * 0.2);
+        return (mouse.x < canvas.width * 0.15);
     };
 
     const is_moving_top = () => {
-        return (mouse.y < canvas.height * 0.2);
+        return (mouse.y < canvas.height * 0.15);
     };
 
     const is_moving_bottom = () => {
-        return (mouse.y > canvas.height * 0.8);
+        return (mouse.y > canvas.height * 0.85);
     };
-
-    let location = {x: 0, y: 0};
 
     const update = () => {
         canvas.width = window.innerWidth - 30;
-        canvas.height = window.innerHeight - 50;
+        canvas.height = window.innerHeight - 60;
 
         const curr_time = new Date().getTime();
         const dt = curr_time - prev_time; 
@@ -145,18 +220,18 @@ const createUpdate = (mouse, ctx, canvas, field) => {
             time = 0;
 
             if (is_moving_right() && is_inside)
-                location.x -= SPEED;
+                pos.x -= SPEED;
 
             else if (is_moving_left() && is_inside)
-                location.x += SPEED; 
+                pos.x += SPEED; 
 
             if (is_moving_top() && is_inside)
-                location.y += SPEED;
+                pos.y += SPEED;
 
             else if (is_moving_bottom() && is_inside)
-                location.y -= SPEED;
+                pos.y -= SPEED;
            
-            draw(location, ctx, canvas, field);
+            draw(pos, ctx, canvas, field, selected);
         }
 
         window.requestAnimationFrame(update);
@@ -166,22 +241,51 @@ const createUpdate = (mouse, ctx, canvas, field) => {
 };
 
 
+/**
+ * Creates the update callback function.
+ */
 const as_string = (coordinates) => {
-    return `${coordinates[0]}:${coordinates[1]}`;
+    return `${coordinates.x}:${coordinates.y}`;
 };
 
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const socket = new WebSocket();
+    const host_btn_open = document.getElementById(
+        'host-btn-open');
+    
+    host_btn_open.onclick = () => {
+        document.getElementById('host-form')
+            .style.display = 'block';
+    };
+    
+    const host_btn_cancel = document.getElementById(
+        'host-btn-cancel');
 
-    let mouse = {x: 0, y: 0};
+    host_btn_cancel.onclick = () => {
+        document.getElementById('host-form')
+            .style.display = 'none';
+    }
+  
+    const join_btn_cancel = document.getElementById(
+        'host-btn-cancel');
+
+    let mouse = {x: 0, y: 0}; // location of mouse in pixel
+    let pos = {x : 0, y: 0}; // location of the screen 
+    let selected = {x: 0, y: 0}; // targeted cell
 
     canvas.onmousemove = (e) => {
         let rect = canvas.getBoundingClientRect();
         mouse.x = e.clientX - rect.left;
         mouse.y = e.clientY - rect.top;
+        let coord = computeRelativeCoord(mouse, pos, canvas);
+        selected.x = coord.x;
+        selected.y = coord.y;
+    };
+
+    canvas.onclick = (e) => {
+        const coord = computeRelativeCoord(mouse, pos, canvas);
+        field.set(as_string(coord), 'X');
     };
     
     canvas.onmouseout = () => {
@@ -193,12 +297,13 @@ window.addEventListener('load', () => {
     };
   
     const field = new Map([
-        [as_string([0, 0]), 'X'],
-        [as_string([1, 2]), 'O'],
-        [as_string([0, 4]), 'O']
+        [as_string({x: 0, y: 0}), 'X'],
+        [as_string({x: 1, y: 2}), 'O'],
+        [as_string({x: 0, y: 4}), 'O']
     ]);
 
-    const update = createUpdate(mouse, ctx, canvas, field);
+    const update = createUpdate(
+        pos, mouse, canvas, field, selected);
     window.requestAnimationFrame(update);
 });
 

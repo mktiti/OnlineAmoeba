@@ -15,10 +15,39 @@
     
     <body>
         <div class=control-panel>
-            <button class="button"><span>Join </span></button>
-            <button class="button"><span>Host </span></button>
+            <div class="form-popup" id="host-form">
+                <form class="form-container">
+                    <h1>Host</h1>
+
+                    <label for="email"><b>Email</b></label>
+                    <input type="text" placeholder="Enter Email" name="email" required>
+
+                    <label for="psw"><b>Password</b></label>
+                    <input type="password" placeholder="Enter Password" name="psw" required>
+
+                    <button type="submit" class="btn">Login</button>
+                    <button id="host-btn-cancel" type="button" class="btn cancel" onclick="closeForm()">Close</button>
+                </form>
+            </div>
+            <div class="form-popup" id="join-form">
+                <form class="form-container">
+                    <h1>Host</h1>
+
+                    <label for="email"><b>Email</b></label>
+                    <input type="text" placeholder="Enter Email" name="email" required>
+
+                    <label for="psw"><b>Password</b></label>
+                    <input type="password" placeholder="Enter Password" name="psw" required>
+
+                    <button type="submit" class="btn">Login</button>
+                    <button id="join-btn-cancel" type="button" class="btn cancel">Close</button>
+                </form>
+            </div>
+            <button id="join-btn-open" class="button"><span>Join </span></button>
+            <button id="host-btn-open" class="button"><span>Host </span></button>
+            <canvas id="canvas" style="border: 1px solid red;"></canvas>
+
         </div>
-        <canvas id="canvas" style="border: 1px solid red;"></canvas>
     </body>
     <script src="game.js"></script>
 </html>
