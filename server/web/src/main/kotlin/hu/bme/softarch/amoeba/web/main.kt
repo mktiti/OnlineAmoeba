@@ -5,9 +5,8 @@ import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
 import hu.bme.softarch.amoeba.game.web.generated.ProjectInfo
 import hu.bme.softarch.amoeba.web.util.Server.startServer
-import hu.bme.softarch.amoeba.web.api.CreatedGameData
 import hu.bme.softarch.amoeba.web.api.GameHandler
-import hu.bme.softarch.amoeba.web.api.NewGameData
+import hu.bme.softarch.amoeba.dto.NewGameData
 import hu.bme.softarch.amoeba.web.util.setLogLocation
 import kotlin.system.exitProcess
 

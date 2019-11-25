@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web.api
+package hu.bme.softarch.amoeba.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
