@@ -5,10 +5,10 @@ import hu.bme.softarch.amoeba.dto.WsServerMessage
 import hu.bme.softarch.amoeba.dto.WsServerMessage.*
 import hu.bme.softarch.amoeba.game.MapField
 import hu.bme.softarch.amoeba.game.MutableField
+import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MatchController(fullGame: FullGame) {
 
@@ -18,7 +18,7 @@ class MatchController(fullGame: FullGame) {
         val outChannels = mutableMapOf<String, (WsServerMessage) -> Unit>()
     }
 
-    private val placeLock = ReentrantLock()
+    private val placeCheck = AtomicBoolean()
 
     private val gameField: MutableField = MapField(
             toWin = fullGame.info.toWin,
@@ -67,33 +67,46 @@ class MatchController(fullGame: FullGame) {
         }
     }
 
+    /**
+     * Non thread-safe, only call with checks
+     */
+    private fun placeNew(player: Sign, position: Pos) {
+        val next = waitingFor
+        if (next == null) {
+            send(player, Error("Game already finished"))
+            return
+        }
+
+        if (next != player) {
+            send(player, Error("Not your turn"))
+        } else {
+            if (gameField[position] == null) {
+                val winRow = gameField.set(position, player)
+                send(NewPoint(player, position))
+                waitingFor = if (winRow != null) {
+                    send(GameResult(player, winRow))
+                    null
+                } else {
+                    !next
+                }
+            } else {
+                send(player, Error("Position '$position' already occupied, try again"))
+            }
+        }
+    }
+
     private fun onMessage(player: Sign, message: WsClientMessage) {
         when (message) {
             is WsClientMessage.PutNew -> {
-                placeLock.withLock {
-                    val next = waitingFor
-                    if (next == null) {
-                        send(player, Error("Game already finished"))
-                        return
-                    }
 
-                    if (waitingFor != player) {
-                        send(player, Error("Not your turn"))
-                    } else {
-                        if (gameField[message.position] == null) {
-                            val winRow = gameField.set(message.position, player)
-                            send(NewPoint(player, message.position))
-                            waitingFor = if (winRow != null) {
-                                send(GameResult(player, winRow))
-                                null
-                            } else {
-                                !next
-                            }
-                        } else {
-                            send(player, OpponentEvent("Position '${message.position}' already occupied, try again"))
-                        }
+                while (!placeCheck.compareAndSet(false, true)) {
+                    try {
+                        placeNew(player, message.position)
+                    } finally {
+                        placeCheck.set(false)
                     }
                 }
+
             }
             is WsClientMessage.PartScanRequest -> {
                 send(player, PartScanResponse(
