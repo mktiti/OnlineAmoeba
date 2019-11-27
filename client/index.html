@@ -11,43 +11,64 @@
         <meta name="viewport" content="width=device-wdth, initial-scale=1" />
         <title>Amoeba</title>
         <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" integrity="sha384-SI27wrMjH3ZZ89r4o+fGIJtnzkAnFs3E4qz9DIYioCQ5l9Rd/7UAa8DHcaL8jkWt" crossorigin="anonymous">
     </head>
-    
     <body>
         <div class=control-panel>
-            <div class="form-popup" id="host-form">
-                <form class="form-container">
-                    <h1>Host</h1>
-
-                    <label for="email"><b>Email</b></label>
-                    <input type="text" placeholder="Enter Email" name="email" required>
-
-                    <label for="psw"><b>Password</b></label>
-                    <input type="password" placeholder="Enter Password" name="psw" required>
-
-                    <button type="submit" class="btn">Login</button>
-                    <button id="host-btn-cancel" type="button" class="btn cancel" onclick="closeForm()">Close</button>
-                </form>
-            </div>
-            <div class="form-popup" id="join-form">
-                <form class="form-container">
-                    <h1>Host</h1>
-
-                    <label for="email"><b>Email</b></label>
-                    <input type="text" placeholder="Enter Email" name="email" required>
-
-                    <label for="psw"><b>Password</b></label>
-                    <input type="password" placeholder="Enter Password" name="psw" required>
-
-                    <button type="submit" class="btn">Login</button>
-                    <button id="join-btn-cancel" type="button" class="btn cancel">Close</button>
-                </form>
-            </div>
-            <button id="join-btn-open" class="button"><span>Join </span></button>
-            <button id="host-btn-open" class="button"><span>Host </span></button>
-            <canvas id="canvas" style="border: 1px solid red;"></canvas>
-
+            <div class="navbar">
+                <div class="d-flex">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Host 
+                        </button>
+                        <div class="dropdown-menu">
+                            <form class="px-4 py-3">
+                                <div class="form-group">
+                                    <label for="exampleDropdownFormPassword1"><b>Tiles Required</b></label>
+                                    <div class="size-selection">
+                                        <input type="range" min="3" max="7" step="1" list="steplist" display:inline>
+                                        <datalist id="steplist">
+                                            <option>3</option>
+                                            <option>4</option>
+                                            <option>5</option>
+                                            <option>6</option>
+                                            <option>7</option>
+                                        </datalist>
+                                        <label><b>5</b></label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Host</button>
+                            </form>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#">Your code:</a>
+                            <a class="dropdown-item" href="#">Opponent's code:</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Join
+                        </button>
+                        <div class="dropdown-menu">
+                            <form class="px-4 py-3">
+                                <div class="form-group">
+                                    <label for="exampleDropdownFormEmail1">Join Session</label>
+                                    <input type="text" class="form-control" id="exampleDropdownFormEmail1" placeholder="ID">
+                                </div>
+                                <div class="form-group"></div>
+                                <button type="submit" class="btn btn-primary">Join</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div>
+                        <label>Your turn</label>
+                    </div>   
+                </div>
+            </div>       
         </div>
+        <canvas id="canvas"></canvas>
     </body>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js" integrity="sha384-3qaqj0lc6sV/qpzrc1N5DC6i1VRn/HyX4qdPaiEFbn54VjQBEU341pvjz7Dv3n6P" crossorigin="anonymous"></script>
     <script src="game.js"></script>
 </html>

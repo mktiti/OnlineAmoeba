@@ -162,7 +162,7 @@ const draw = (pos, ctx, canvas, field, selected) => {
             ctx.rect(left, top, UNIT, UNIT);
             ctx.stroke();
             
-            switch (field.get(as_string(coord))) {
+            switch (field.get(toString(coord))) {
                 case 'X':
                     draw_cross(left, top, ctx);
                     break;
@@ -189,25 +189,25 @@ const createUpdate = (
     // *_move variables determine the bounding box
     // in which the mouse will cause the screen
     // to move in that direction
-    const is_moving_right = () => {
+    const isMovingRight = () => {
         return (mouse.x > canvas.width * 0.85);
     };
 
-    const is_moving_left = () => {
+    const isMovingLeft = () => {
         return (mouse.x < canvas.width * 0.15);
     };
 
-    const is_moving_top = () => {
+    const isMovingTop = () => {
         return (mouse.y < canvas.height * 0.15);
     };
 
-    const is_moving_bottom = () => {
+    const isMovingBottom = () => {
         return (mouse.y > canvas.height * 0.85);
     };
 
     const update = () => {
-        canvas.width = window.innerWidth - 30;
-        canvas.height = window.innerHeight - 60;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 100;
 
         const curr_time = new Date().getTime();
         const dt = curr_time - prev_time; 
@@ -219,16 +219,16 @@ const createUpdate = (
         if (time > DELTA) {
             time = 0;
 
-            if (is_moving_right() && is_inside)
+            if (isMovingRight() && is_inside)
                 pos.x -= SPEED;
 
-            else if (is_moving_left() && is_inside)
+            else if (isMovingLeft() && is_inside)
                 pos.x += SPEED; 
 
-            if (is_moving_top() && is_inside)
+            if (isMovingTop() && is_inside)
                 pos.y += SPEED;
 
-            else if (is_moving_bottom() && is_inside)
+            else if (isMovingBottom() && is_inside)
                 pos.y -= SPEED;
            
             draw(pos, ctx, canvas, field, selected);
@@ -244,31 +244,42 @@ const createUpdate = (
 /**
  * Creates the update callback function.
  */
-const as_string = (coordinates) => {
+const toString = (coordinates) => {
     return `${coordinates.x}:${coordinates.y}`;
 };
 
 
+const showHostDropdown = () => {
+    document.getElementById('host-dropdown')
+        .classList.toggle('show');
+};
+
+
+const showJoinDropdown = () => {
+    document.getElementById('join-dropdown')
+        .classList.toggle('show');
+};
+
+
+window.onclick = function(e) {
+    if (!(e.target.id == 'host-btn')) {
+        const host_dropdown = document.getElementById(
+            'host-dropdown');
+        if (host_dropdown.classList.contains('show')) {
+            host_dropdown.classList.remove('show');
+        }
+    } else if (!(e.target.id == 'join-btn')) {
+        const join_dropdown = doctument.getElementById(
+            'join-dropdown');
+        if (join_dropdown.classList.contains('show')) {
+            join_dropdown.classList.remove('show');
+        } 
+    }
+}
+
+
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
-    const host_btn_open = document.getElementById(
-        'host-btn-open');
-    
-    host_btn_open.onclick = () => {
-        document.getElementById('host-form')
-            .style.display = 'block';
-    };
-    
-    const host_btn_cancel = document.getElementById(
-        'host-btn-cancel');
-
-    host_btn_cancel.onclick = () => {
-        document.getElementById('host-form')
-            .style.display = 'none';
-    }
-  
-    const join_btn_cancel = document.getElementById(
-        'host-btn-cancel');
 
     let mouse = {x: 0, y: 0}; // location of mouse in pixel
     let pos = {x : 0, y: 0}; // location of the screen 
@@ -278,6 +289,7 @@ window.addEventListener('load', () => {
         let rect = canvas.getBoundingClientRect();
         mouse.x = e.clientX - rect.left;
         mouse.y = e.clientY - rect.top;
+
         let coord = computeRelativeCoord(mouse, pos, canvas);
         selected.x = coord.x;
         selected.y = coord.y;
@@ -285,7 +297,7 @@ window.addEventListener('load', () => {
 
     canvas.onclick = (e) => {
         const coord = computeRelativeCoord(mouse, pos, canvas);
-        field.set(as_string(coord), 'X');
+        field.set(toString(coord), 'X');
     };
     
     canvas.onmouseout = () => {
@@ -297,9 +309,9 @@ window.addEventListener('load', () => {
     };
   
     const field = new Map([
-        [as_string({x: 0, y: 0}), 'X'],
-        [as_string({x: 1, y: 2}), 'O'],
-        [as_string({x: 0, y: 4}), 'O']
+        [toString({x: 0, y: 0}), 'X'],
+        [toString({x: 1, y: 2}), 'O'],
+        [toString({x: 0, y: 4}), 'O']
     ]);
 
     const update = createUpdate(
