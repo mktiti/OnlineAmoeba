@@ -26,7 +26,7 @@
                                 <div class="form-group">
                                     <label for="exampleDropdownFormPassword1"><b>Tiles Required</b></label>
                                     <div class="size-selection">
-                                        <input type="range" min="3" max="7" step="1" list="steplist" display:inline>
+                                        <input type="range" id="label-setter" min="3" max="7" step="1" list="steplist" onchange="setLabel()">
                                         <datalist id="steplist">
                                             <option>3</option>
                                             <option>4</option>
@@ -34,14 +34,22 @@
                                             <option>6</option>
                                             <option>7</option>
                                         </datalist>
-                                        <label><b>5</b></label>
+                                        <label id="range-label">5</label>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Host</button>
+                                <button type="submit" class="btn btn-primary" id="host-btn">Host</button>
                             </form>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#">Your code:</a>
-                            <a class="dropdown-item" href="#">Opponent's code:</a>
+                            <form class="px-4 py-3">
+                                <div class="form-group">
+                                    <label for="exampleDropdownFormEmail1"><b>Your Code:</b></label>
+                                    <input type="text" class="form-control" id="join-label" readonly="readonly">
+                                </div>
+                                <div class="form-group">
+                                    <label for="exampleDropdownFormEmail1"><b>Invite Code:</b></label>
+                                    <input type="text" class="form-control" id="invite-label" readonly="readonly">
+                                </div>
+                            </form>
                         </div>
                     </div>
                     <div class="dropdown">
@@ -51,17 +59,21 @@
                         <div class="dropdown-menu">
                             <form class="px-4 py-3">
                                 <div class="form-group">
-                                    <label for="exampleDropdownFormEmail1">Join Session</label>
-                                    <input type="text" class="form-control" id="exampleDropdownFormEmail1" placeholder="ID">
+                                    <label for="gen-text"><b>Generate Join Code</b></label>
+                                    <input type="text" class="form-control" id="gen-text" placeholder="Invite Code">
+                                </div>
+                                <div class="form-group">
+                                <button type="submit" class="btn btn-primary" id="gen-btn">Generate</button>
+                                </div>
+                                <div class="form-group">
+                                    <label for="join-btn"><b>Join Game</b></label>
+                                    <input type="text" class="form-control" id="join-text" placeholder="Join Code">
                                 </div>
                                 <div class="form-group"></div>
-                                <button type="submit" class="btn btn-primary">Join</button>
+                                <button type="submit" class="btn btn-primary" id="join-btn">Join</button>
                             </form>
                         </div>
-                    </div>
-                    <div>
-                        <label>Your turn</label>
-                    </div>   
+                    </div>  
                 </div>
             </div>       
         </div>

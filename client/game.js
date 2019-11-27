@@ -11,14 +11,15 @@ const UNIT = 50;  // size of the unit rectangle
 const DELTA = 10; // fps ( 16 is roughly 60fps )
 const SPEED = 6; // speed of the movement
 const PROP = 0.2; // proportion of the shape frame 
+const PORT = '8080'
 
 const OFFSET = UNIT * PROP;
 
 // global variable to store if mouse is inside screen
 let is_inside = true;
 
-const REST_URL = 'localhost:port/api/matches'; 
-const WS_URL = 'ws://localhost:port/game/{id}/{joinCode}'
+const REST_URL = `http://localhost:${PORT}/api/matches`; 
+const WS_URL = `ws://localhost:${PORT}/game`;
 
 // {"type": "put", "position": {"x": 10, "y": 5}} 
 // 
@@ -114,6 +115,7 @@ const computeRelativeCoord = (mouse, pos, canvas) => {
     // shifting the coordinate to the middle
     const x_shift = Math.floor(size.w / 2) + abs.x + 1;
     const y_shift = Math.floor(size.h / 2) + abs.y + 1;
+
     return {
         x: x_mouse - x_shift, 
         y: -(y_mouse - y_shift)
@@ -249,41 +251,95 @@ const toString = (coordinates) => {
 };
 
 
-const showHostDropdown = () => {
-    document.getElementById('host-dropdown')
-        .classList.toggle('show');
+/**
+ * Sets the label of the range slider.
+ */
+const setLabel = () => {
+    const label = document.getElementById('range-label');
+    const range = document.getElementById('label-setter');
+
+    label.textContent = range.value;
 };
 
 
-const showJoinDropdown = () => {
-    document.getElementById('join-dropdown')
-        .classList.toggle('show');
+/**
+ * Sets the generated codes in the fields.
+ */
+const setHostCodes = (result) => {
+    const join_label = document.getElementById('join-label');
+    join_label.value = result['hostJoinCode'];
+
+    const invite_label = document.getElementById('invite-label');
+    invite_label.value = result['inviteCode']
 };
-
-
-window.onclick = function(e) {
-    if (!(e.target.id == 'host-btn')) {
-        const host_dropdown = document.getElementById(
-            'host-dropdown');
-        if (host_dropdown.classList.contains('show')) {
-            host_dropdown.classList.remove('show');
-        }
-    } else if (!(e.target.id == 'join-btn')) {
-        const join_dropdown = doctument.getElementById(
-            'join-dropdown');
-        if (join_dropdown.classList.contains('show')) {
-            join_dropdown.classList.remove('show');
-        } 
-    }
-}
 
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
+    const join_text = document.getElementById('join-text');
+
+    let socket = undefined;
 
     let mouse = {x: 0, y: 0}; // location of mouse in pixel
     let pos = {x : 0, y: 0}; // location of the screen 
     let selected = {x: 0, y: 0}; // targeted cell
+
+    let game = {id: undefined};
+
+    // setting up listeners for the host window
+    // quering the game id and the invite codes
+
+    const host_button = document.getElementById('host-btn');
+    host_button.onclick = async () => {
+        const response = await fetch(REST_URL, {
+            method: 'POST',
+            body: JSON.stringify({'tilesToWin': 5}),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        setHostCodes(result);
+
+        game.id = result['id'];
+    };
+
+    // setting up listeners for the join window
+    // generating join code
+
+    const generate_button = document.getElementById('gen-btn');
+    generate_button.onclick = async () => {
+        const generate_text = document.getElementById('gen-text');
+        const invite_code = generate_text.value;
+
+        const response = await fetch(
+            `${REST_URL}/${invite_code}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        join_text.value = result['clientJoinCode'];
+    };
+
+    // setting up listeners for the join game button and
+    // starting websocket communication with the server
+
+    const join_button = document.getElementById('join-btn');
+    join_button.onclick = () => {
+        socket = new WebSocket(`${WS_URL}/${game.id}/${join_text.value}`);
+
+        socket.addEventListener('open', (e) => {
+            console.log(e.data);
+        });
+
+        socket.addEventListener('message', (e) => {
+            console.log(e.data);
+        });
+    };
 
     canvas.onmousemove = (e) => {
         let rect = canvas.getBoundingClientRect();
