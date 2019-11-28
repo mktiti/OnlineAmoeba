@@ -1,6 +1,6 @@
 package hu.bme.softarch.amoeba.web.util
 
-import hu.bme.softarch.amoeba.web.websocket.MatchClientController
+import hu.bme.softarch.amoeba.web.websocket.MatchClientConnector
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
@@ -49,7 +49,7 @@ object Server {
                 )
             }
 
-            WebSocketServerContainerInitializer.configureContext(this).addEndpoint(MatchClientController::class.java)
+            WebSocketServerContainerInitializer.configureContext(this).addEndpoint(MatchClientConnector::class.java)
             addServlet(ServletHolder("default", DefaultServlet()), "/")
         }
 
