@@ -66,7 +66,12 @@ class MatchClientConnector {
     }
 
     @OnError
-    fun onError(session: Session, error: Throwable) {
+    fun onError(session: Session?, error: Throwable) {
+        if (session == null) {
+            log.debug("Error while connecting to match ws endpoint", error)
+            return
+        }
+
         fun error(message: String) {
             session.asyncRemote.sendObject(Error(message))
         }
