@@ -1,6 +1,8 @@
 package hu.bme.softarch.amoeba.web.websocket
 
 import com.fasterxml.jackson.core.JsonParseException
+import hu.bme.softarch.amoeba.dto.WsClientMessage
+import hu.bme.softarch.amoeba.dto.WsServerMessage.Error
 import hu.bme.softarch.amoeba.web.api.InMemLobbyService
 import hu.bme.softarch.amoeba.web.api.LobbyService
 import hu.bme.softarch.amoeba.web.util.logger
@@ -13,7 +15,7 @@ import kotlin.concurrent.withLock
 
 @Suppress("unused")
 @ServerEndpoint("/game/{gameId}/{joinCode}", encoders = [WsMessageEncoder::class], decoders = [WsMessageDecoder::class])
-class MatchClientController {
+class MatchClientConnector {
 
     companion object {
         private val matchLock = ReentrantLock()
@@ -62,12 +64,12 @@ class MatchClientController {
         when (error) {
             is JsonParseException -> {
                 log.debug("Invalid json message for match ws endpoint", error)
-                session.asyncRemote.sendObject(WsServerMessage.Error("Invalid JSON message received"))
+                session.asyncRemote.sendObject(Error("Invalid JSON message received"))
             }
             is CloseException -> log.debug("Close in ws match communication", error)
             else -> {
                 log.info("Error in game ws: ", error)
-                session.asyncRemote.sendObject(WsServerMessage.Error("Error while processing message"))
+                session.asyncRemote.sendObject(Error("Error while processing message"))
             }
         }
     }
