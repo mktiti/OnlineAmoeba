@@ -1,8 +1,5 @@
 package hu.bme.softarch.amoeba.web.api
 
-import hu.bme.softarch.amoeba.dto.CreatedGameData
-import hu.bme.softarch.amoeba.dto.GameJoinData
-import hu.bme.softarch.amoeba.dto.NewGameData
 import hu.bme.softarch.amoeba.web.util.entity
 import javax.inject.Singleton
 import javax.ws.rs.*

@@ -16,13 +16,10 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 
         <junit-jupiter.version>5.4.2</junit-jupiter.version>
-
-        <jackson.version>2.9.0</jackson.version>
     </properties>
 
     <modules>
         <module>game</module>
-        <module>dto-model</module>
         <module>web</module>
     </modules>
 
@@ -32,30 +29,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>hu.bme.softarch</groupId>
-                <artifactId>game</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>hu.bme.softarch</groupId>
-                <artifactId>dto-model</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-kotlin</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                <artifactId>jackson-jaxrs-json-provider</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib</artifactId>

@@ -1,14 +1,12 @@
 package hu.bme.softarch.amoeba.web.websocket
 
-import hu.bme.softarch.amoeba.dto.WsClientMessage
-import hu.bme.softarch.amoeba.dto.WsServerMessage
-import hu.bme.softarch.amoeba.dto.WsServerMessage.*
 import hu.bme.softarch.amoeba.game.MapField
 import hu.bme.softarch.amoeba.game.MutableField
-import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
-import java.util.concurrent.atomic.AtomicBoolean
+import hu.bme.softarch.amoeba.web.websocket.WsServerMessage.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class MatchController(fullGame: FullGame) {
 
@@ -18,7 +16,7 @@ class MatchController(fullGame: FullGame) {
         val outChannels = mutableMapOf<String, (WsServerMessage) -> Unit>()
     }
 
-    private val placeCheck = AtomicBoolean()
+    private val placeLock = ReentrantLock()
 
     private val gameField: MutableField = MapField(
             toWin = fullGame.info.toWin,
@@ -67,53 +65,36 @@ class MatchController(fullGame: FullGame) {
         }
     }
 
-    /**
-     * Non thread-safe, only call with checks
-     */
-    private fun placeNew(player: Sign, position: Pos) {
-        val next = waitingFor
-        if (next == null) {
-            send(player, Error("Game already finished"))
-            return
-        }
-
-        if (next != player) {
-            send(player, Error("Not your turn"))
-        } else {
-            if (gameField[position] == null) {
-                val winRow = gameField.set(position, player)
-                send(NewPoint(player, position))
-                waitingFor = if (winRow != null) {
-                    send(GameResult(player, winRow))
-                    null
-                } else {
-                    !next
-                }
-            } else {
-                send(player, Error("Position '$position' already occupied, try again"))
-            }
-        }
-    }
-
     private fun onMessage(player: Sign, message: WsClientMessage) {
         when (message) {
             is WsClientMessage.PutNew -> {
+                placeLock.withLock {
+                    val next = waitingFor
+                    if (next == null) {
+                        send(player, Error("Game already finished"))
+                        return
+                    }
 
-                while (!placeCheck.compareAndSet(false, true)) {
-                    try {
-                        placeNew(player, message.position)
-                    } finally {
-                        placeCheck.set(false)
+                    if (waitingFor != player) {
+                        send(player, Error("Not your turn"))
+                    } else {
+                        if (gameField[message.position] == null) {
+                            val winRow = gameField.set(message.position, player)
+                            send(NewPoint(player, message.position))
+                            waitingFor = if (winRow != null) {
+                                send(GameResult(player, winRow))
+                                null
+                            } else {
+                                !next
+                            }
+                        } else {
+                            send(player, OpponentEvent("Position '${message.position}' already occupied, try again"))
+                        }
                     }
                 }
-
             }
             is WsClientMessage.PartScanRequest -> {
-                send(player, PartScanResponse(
-                        bounds = message.range,
-                        xs = gameField.positionsOf(Sign.X, message.range),
-                        os = gameField.positionsOf(Sign.O, message.range)
-                ))
+                send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
             }
             is WsClientMessage.FullScanRequest -> {
                 send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))

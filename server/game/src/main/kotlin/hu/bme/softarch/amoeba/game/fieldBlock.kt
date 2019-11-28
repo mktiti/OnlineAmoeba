@@ -17,6 +17,16 @@ internal operator fun FieldBlock.contains(pos: Pos) = range.contains(pos)
 
 internal operator fun FieldBlock.get(pos: Pos): Sign? = get(toLocal(pos))
 
+internal class EmptyBlock(
+    override val range: FieldRange
+) : FieldBlock {
+
+    override fun get(pos: LocalPos): Sign? = null
+
+    override fun positionsOf(sign: Sign) = emptyList<LocalPos>()
+
+}
+
 internal interface MutableFieldBlock : FieldBlock {
 
     operator fun set(pos: LocalPos, sign: Sign)
