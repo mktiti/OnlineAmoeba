@@ -9,6 +9,8 @@ interface Field {
 
     fun positionsOf(sign: Sign): Collection<Pos>
 
+    fun positionsOf(sign: Sign, range: FieldRange): Collection<Pos>
+
 }
 
 interface MutableField : Field {
@@ -91,11 +93,28 @@ class MapField(
         block[pos] = sign
     }
 
+    private fun toAbsolute(block: FieldBlock, pos: LocalPos): Pos {
+        val xOffset = block.range.bottomLeft.x
+        val yOffset = block.range.bottomLeft.y
+        return Pos(xOffset + valueOf(pos.x.toLong()), yOffset + valueOf(pos.y.toLong()))
+    }
+
     override fun positionsOf(sign: Sign): Collection<Pos> =
         blocks.flatMap { block ->
-            val xOffset = block.range.bottomLeft.x
-            val yOffset = block.range.bottomLeft.y
-            block.positionsOf(sign).map { Pos(xOffset + valueOf(it.x.toLong()), yOffset + valueOf(it.y.toLong())) }
+            block.positionsOf(sign).map { toAbsolute(block, it) }
+        }
+
+    override fun positionsOf(sign: Sign, range: FieldRange): Collection<Pos> =
+        blocks.flatMap { block ->
+            val all by lazy {
+                block.positionsOf(sign).map { toAbsolute(block, it) }
+            }
+
+            when (range.contain(block.range)) {
+                ContainType.CONTAIN -> all
+                ContainType.INTERSECT -> all.filter { range.contains(it) }
+                ContainType.NONE -> emptyList()
+            }
         }
 
 }

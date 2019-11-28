@@ -4,8 +4,8 @@ import hu.bme.softarch.amoeba.web.api.FullGame
 
 interface GameRepo {
 
-    fun fetchArchived(joinCode: String): FullGame
+    fun fetchArchived(id: Long): FullGame?
 
-    fun archive()
+    fun archive(game: FullGame)
 
 }
