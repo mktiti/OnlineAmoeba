@@ -31,6 +31,33 @@ const WS_URL = `ws://localhost:${PORT}/game`;
 
 
 /**
+ * Enumeration that stores the possible signs.
+ */
+const Sign = {
+    CROSS: 'X',
+    CIRCLE: 'O'
+};
+
+
+/**
+ * Enumeration that stores the possible signs.
+ */
+const ServerMessage = {
+    INFO: 'info'
+};
+
+
+/**
+ * Enumeration that stores the possible signs.
+ */
+const ClientMessage = {
+    PUT: 'put',
+    FULLSCAN: 'full-scan',
+    PARTSCAN: 'part-scan'
+};
+
+
+/**
  * Draws a circle around the provided coordinates. 
  */
 const draw_circle = (left, top, ctx) => {
@@ -165,11 +192,11 @@ const draw = (pos, ctx, canvas, field, selected) => {
             ctx.stroke();
             
             switch (field.get(toString(coord))) {
-                case 'X':
+                case Sign.CROSS:
                     draw_cross(left, top, ctx);
                     break;
 
-                case 'O':
+                case Sign.CIRCLE:
                     draw_circle(left, top, ctx);
                     break;
             }
@@ -284,7 +311,11 @@ window.addEventListener('load', () => {
     let pos = {x : 0, y: 0}; // location of the screen 
     let selected = {x: 0, y: 0}; // targeted cell
 
-    let game = {id: undefined};
+    let game = {
+        id: undefined, 
+        is_player_turn: false, 
+        sign: undefined
+    };
 
     // setting up listeners for the host window
     // quering the game id and the invite codes
@@ -324,20 +355,37 @@ window.addEventListener('load', () => {
         const result = await response.json();
         join_text.value = result['clientJoinCode'];
     };
+    
+    // implementing callback function for the websocket
+    const handle_info = (message) => {
+        game.sign = message['sign']
+        game.is_player_turn = game.sign === message['waitingFor'];
+    };
 
+    
     // setting up listeners for the join game button and
     // starting websocket communication with the server
 
     const join_button = document.getElementById('join-btn');
     join_button.onclick = () => {
-        socket = new WebSocket(`${WS_URL}/${game.id}/${join_text.value}`);
+        socket = new WebSocket(
+            `${WS_URL}/${game.id}/${join_text.value}`);
 
-        socket.addEventListener('open', (e) => {
-            console.log(e.data);
-        });
-
+      
         socket.addEventListener('message', (e) => {
-            console.log(e.data);
+            if (e.data === undefined)
+                return;
+            
+            const message = JSON.parse(e.data);
+
+            const type = message['type'];
+            switch (type) {
+                case ServerMessage.INFO:
+                    handle_info(message);
+                    break;
+                case ServerMessage.ASD:
+                    
+            };
         });
     };
 
@@ -353,7 +401,10 @@ window.addEventListener('load', () => {
 
     canvas.onclick = (e) => {
         const coord = computeRelativeCoord(mouse, pos, canvas);
-        field.set(toString(coord), 'X');
+        if (game.is_player_turn) {
+            console.log('asd');
+            socket.send({});
+        }
     };
     
     canvas.onmouseout = () => {
