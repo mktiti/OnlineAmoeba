@@ -43,13 +43,36 @@ data class LocalPos(
 
 }
 
+enum class ContainType {
+    CONTAIN, INTERSECT, NONE;
+
+    infix fun and(other: ContainType) = when (this) {
+        CONTAIN -> other
+        INTERSECT -> if (other == NONE) NONE else INTERSECT
+        NONE -> NONE
+    }
+
+}
+
 data class FieldRange(
     val bottomLeft: Pos,
     val topRight: Pos
 ) {
 
+    private companion object {
+        private fun contain(aMin: BigInteger, aMax: BigInteger, bMin: BigInteger, bMax: BigInteger): ContainType = when {
+            aMin <= bMin && aMax >= bMax -> ContainType.CONTAIN
+            bMin in (aMin..aMax) || bMax in (aMin..aMax) -> ContainType.INTERSECT
+            else -> ContainType.NONE
+        }
+    }
+
     operator fun contains(pos: Pos)
             = bottomLeft.x <= pos.x && bottomLeft.y <= pos.y &&
               topRight.x >= pos.x && topRight.y >= pos.y
+
+    fun contain(other: FieldRange): ContainType =
+            contain(bottomLeft.x, topRight.x, other.bottomLeft.x, other.topRight.x) and
+            contain(bottomLeft.y, topRight.y, other.bottomLeft.y, other.topRight.y)
 
 }

@@ -1,4 +1,4 @@
-package hu.bme.softarch.amoeba.web
+package hu.bme.softarch.amoeba.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
@@ -8,6 +8,7 @@ data class NewGameData(
 )
 
 data class CreatedGameData(
+    val id: Long,
     val inviteCode: String,
     val hostJoinCode: String
 )
