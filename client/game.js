@@ -58,7 +58,7 @@ const ClientMessage = {
 /**
  * Draws a circle around the provided coordinates. 
  */
-const draw_circle = (left, top, ctx) => {
+const drawCircle = (left, top, ctx) => {
     ctx.beginPath();
     ctx.arc(
         left + (UNIT / 2),
@@ -71,7 +71,7 @@ const draw_circle = (left, top, ctx) => {
 /**
  * Draws a cross in the box given by the coordinates.
  */
-const draw_cross = (left, top, ctx) => {
+const drawCross = (left, top, ctx) => {
     ctx.beginPath();
     ctx.moveTo(left + OFFSET, top + OFFSET);
     ctx.lineTo(left + UNIT - OFFSET, top + UNIT - OFFSET);
@@ -80,6 +80,20 @@ const draw_cross = (left, top, ctx) => {
     ctx.lineTo(left + UNIT - OFFSET, top + OFFSET);
     ctx.stroke();
 };
+
+
+/**
+ * Draws a number on the provided location.
+ */
+const drawNumber = (left, top, num, ctx) => {
+    ctx.beginPath();
+    ctx.font = '20px Comic Sans MS';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText(num, left, top); 
+    ctx.stroke();
+};
+
 
 /**
  * Computes the offset of the field.
@@ -152,7 +166,8 @@ const computeRelativeCoord = (mouse, pos, canvas) => {
  * Draws the field based on the provided `location`
  * (screen middle) coordinates.
  */
-const draw = (pos, ctx, canvas, field, selected) => {
+const draw = (
+        pos, ctx, canvas, field, selected, finished) => {
     const size = computeSize(canvas);
 
     // offsets are the value by which the grid is shifted
@@ -168,14 +183,51 @@ const draw = (pos, ctx, canvas, field, selected) => {
     // the screen 
     const x_shift = Math.floor(size.w / 2) + abs.x + 1;
     const y_shift = Math.floor(size.h / 2) + abs.y + 1;
-    
+
     for (let i = 0; i <= size.w + 1; i++) {
         for (let j = 0; j <= size.h + 1; j++) {
             const top = (j * UNIT) - offset.y;
-            const left = (i  * UNIT) - offset.x;
+            const left = (i * UNIT) - offset.x;
+
+            const coord = {
+                x: i - x_shift,
+                y: -(j - y_shift)
+            };
+             
+            // drawing the line number in every column
+            if (j == 1) {
+                let num_top = (UNIT / 2);
+                let num_left = (i * UNIT) + 
+                    (UNIT / 2) - offset.x;
+                let num = coord.x;
+
+                drawNumber(num_left, num_top, num, ctx);
+            }
+
+            // drawing the line number in every row
+            if (i == 1) {
+                let num_top = (j * UNIT) + 
+                    (UNIT / 1.5) - offset.y;
+                let num_left = (UNIT / 2);
+                let num = coord.y;
+
+                drawNumber(num_left, num_top, num, ctx);
+            }
+
+
             
-          const coord = {x: i - x_shift ,y: -j + y_shift};
-            
+            // if the game is finished then the finished
+            // argument is a map that stores the location
+            // of the winning tile sequence 
+            if (finished && finished.has(toString(coord))) {
+                if (c.x == coord.x && c.y == coord.y) {
+                    ctx.beginPath();
+                    ctx.fillStyle = '#00d300';
+                    ctx.fillRect(left, top, UNIT, UNIT);
+                    ctx.stroke();
+                } 
+            }
+
             // drawing the highlighted cell
             if (coord.x == selected.x && 
                     coord.y == selected.y) {
@@ -191,11 +243,11 @@ const draw = (pos, ctx, canvas, field, selected) => {
             
             switch (field.get(toString(coord))) {
                 case Sign.CROSS:
-                    draw_cross(left, top, ctx);
+                    drawCross(left, top, ctx);
                     break;
 
                 case Sign.CIRCLE:
-                    draw_circle(left, top, ctx);
+                    drawCircle(left, top, ctx);
                     break;
             }
         }
@@ -260,7 +312,10 @@ const createUpdate = (
            
             draw(pos, ctx, canvas, field, selected);
         }
+        
+        if (time > DELTA) {
 
+        }
         window.requestAnimationFrame(update);
     };
 
