@@ -22,11 +22,11 @@
                             Host 
                         </button>
                         <div class="dropdown-menu">
-                            <form class="px-4 py-3">
+                            <div class="px-4 py-3">
                                 <div class="form-group">
                                     <label for="exampleDropdownFormPassword1"><b>Tiles Required</b></label>
                                     <div class="size-selection">
-                                        <input type="range" id="label-setter" min="3" max="7" step="1" list="steplist" onchange="setLabel()">
+                                        <input type="range" id="label-setter" min="3" max="7" step="1" list="steplist" onchange="setRangeLabel()">
                                         <datalist id="steplist">
                                             <option>3</option>
                                             <option>4</option>
@@ -37,19 +37,19 @@
                                         <label id="range-label">5</label>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary" id="host-btn">Host</button>
-                            </form>
+                                <button class="btn btn-primary" id="host-btn">Host</button>
+                            </div>
                             <div class="dropdown-divider"></div>
-                            <form class="px-4 py-3">
+                            <div class="px-4 py-3">
                                 <div class="form-group">
-                                    <label for="exampleDropdownFormEmail1"><b>Your Code:</b></label>
+                                    <label for="exampleDropdownFormEmail1"><b>Your Join Code:</b></label>
                                     <input type="text" class="form-control" id="join-label" readonly="readonly">
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleDropdownFormEmail1"><b>Invite Code:</b></label>
                                     <input type="text" class="form-control" id="invite-label" readonly="readonly">
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     </div>
                     <div class="dropdown">
@@ -57,7 +57,7 @@
                             Join
                         </button>
                         <div class="dropdown-menu">
-                            <form class="px-4 py-3">
+                            <div class="px-4 py-3">
                                 <div class="form-group">
                                     <label for="gen-text"><b>Generate Join Code</b></label>
                                     <input type="text" class="form-control" id="gen-text" placeholder="Invite Code">
@@ -71,7 +71,7 @@
                                 </div>
                                 <div class="form-group"></div>
                                 <button type="submit" class="btn btn-primary" id="join-btn">Join</button>
-                            </form>
+                            </div>
                         </div>
                     </div>  
                 </div>

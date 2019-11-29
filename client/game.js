@@ -21,14 +21,6 @@ let is_inside = true;
 const REST_URL = `http://localhost:${PORT}/api/matches`; 
 const WS_URL = `ws://localhost:${PORT}/game`;
 
-// {"type": "put", "position": {"x": 10, "y": 5}} 
-// 
-//
-//
-//
-//
-//
-
 
 /**
  * Enumeration that stores the possible signs.
@@ -43,7 +35,13 @@ const Sign = {
  * Enumeration that stores the possible signs.
  */
 const ServerMessage = {
-    INFO: 'info'
+    INFO: 'info',
+    FULLSCAN: 'full-scan',
+    PARTSCAN: 'part-scan',
+    NEWPOINT: 'new-point',
+    EVENT:  'event',
+    GAMERESULT: 'game-result',
+    ERROR:  'error'
 };
 
 
@@ -281,7 +279,7 @@ const toString = (coordinates) => {
 /**
  * Sets the label of the range slider.
  */
-const setLabel = () => {
+const setRangeLabel = () => {
     const label = document.getElementById('range-label');
     const range = document.getElementById('label-setter');
 
@@ -290,22 +288,58 @@ const setLabel = () => {
 
 
 /**
- * Sets the generated codes in the fields.
+ * Handles the result of the host's join and invite
+ * code generation.
  */
-const setHostCodes = (result) => {
+const handleHostResponseResults = (result, game) => {
     const join_label = document.getElementById('join-label');
     join_label.value = result['hostJoinCode'];
 
     const invite_label = document.getElementById('invite-label');
     invite_label.value = result['inviteCode']
+    game.id = result['id'];
+};
+
+
+/**
+ * Handles the result join game request. 
+ */
+const handleJoinResponseResults = (result, game) => {
+    const join_text = document.getElementById('join-text');
+    join_text.value = result['clientJoinCode'];
+    game.id = result['id'];
+};
+
+
+/**
+ * Fetches the join code from the join-text field.
+ */
+const getJoinCode = () => {
+    const join_text = document.getElementById('join-text');
+    return join_text.value;
+};
+
+
+/**
+ * Fetches the invite code from the gen-text field.
+ */
+const getInviteCode = () => {
+    const generate_text = document.getElementById('gen-text');
+    return generate_text.value;
+};
+
+
+/**
+ * Fetches the number of tiles to win from the range label. 
+ */
+const getTileToWin = () => {
+    const range_label = document.getElementById('range-label');
+    return range_label.textContent;
 };
 
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
-    const join_text = document.getElementById('join-text');
-
-    let socket = undefined;
 
     let mouse = {x: 0, y: 0}; // location of mouse in pixel
     let pos = {x : 0, y: 0}; // location of the screen 
@@ -314,7 +348,8 @@ window.addEventListener('load', () => {
     let game = {
         id: undefined, 
         is_player_turn: false, 
-        sign: undefined
+        sign: undefined,
+        socket: undefined
     };
 
     // setting up listeners for the host window
@@ -322,18 +357,18 @@ window.addEventListener('load', () => {
 
     const host_button = document.getElementById('host-btn');
     host_button.onclick = async () => {
+        const n_tiles = getTilesToWin();
+
         const response = await fetch(REST_URL, {
             method: 'POST',
-            body: JSON.stringify({'tilesToWin': 5}),
+            body: JSON.stringify({'tilesToWin': n_tiles}),
             headers: {
                 'Content-Type': 'application/json'
             }
         });
 
         const result = await response.json();
-        setHostCodes(result);
-
-        game.id = result['id'];
+        handleHostResponseResults(result, game);
     };
 
     // setting up listeners for the join window
@@ -341,8 +376,7 @@ window.addEventListener('load', () => {
 
     const generate_button = document.getElementById('gen-btn');
     generate_button.onclick = async () => {
-        const generate_text = document.getElementById('gen-text');
-        const invite_code = generate_text.value;
+        const invite_code = getJoinCode();
 
         const response = await fetch(
             `${REST_URL}/${invite_code}`, {
@@ -353,41 +387,98 @@ window.addEventListener('load', () => {
         });
 
         const result = await response.json();
-        join_text.value = result['clientJoinCode'];
-    };
-    
-    // implementing callback function for the websocket
-    const handle_info = (message) => {
-        game.sign = message['sign']
-        game.is_player_turn = game.sign === message['waitingFor'];
+        handleJoinResponseResults(result, game);
     };
 
-    
-    // setting up listeners for the join game button and
-    // starting websocket communication with the server
-
-    const join_button = document.getElementById('join-btn');
-    join_button.onclick = () => {
+    // sets up websocket and its event listeners by
+    // providing the `join_code` 
+    const setup_websocket = (join_code) => {
         socket = new WebSocket(
-            `${WS_URL}/${game.id}/${join_text.value}`);
+            `${WS_URL}/${game.id}/${join_code}`);
 
-      
         socket.addEventListener('message', (e) => {
+            // return if no data is returned
             if (e.data === undefined)
                 return;
             
             const message = JSON.parse(e.data);
 
-            const type = message['type'];
-            switch (type) {
+            switch (message['type']) {
                 case ServerMessage.INFO:
                     handle_info(message);
                     break;
-                case ServerMessage.ASD:
-                    
+
+                case ServerMessage.FULLSCAN:
+                    handle_fullscan(message);
+                    break;
+
+                case ServerMessage.PARTSCAN:
+                    handle_partscan(message);
+                    break;
+
+                case ServerMessage.NEWPOINT:
+                    handle_newpoint(message);
+                    break;
+
+                case ServerMessage.EVENT:
+                    handle_event(message);
+                    break;
+
+                case ServerMessage.GAMERESULT:
+                    handle_gameresult(message);
+                    break;
+
+                case ServerMessage.ERROR:
+                    handle_error(message);
+                    break;
             };
         });
+    }
+    
+    // implementing callback function for the websocket
+    // server side communication
+
+    const handle_info = (m) => {
+        game.sign = m['sign']
+        game.is_player_turn = game.sign === m['waitingFor'];
     };
+
+    const handle_fullscan = (m) => {
+
+    };
+
+    const handle_partscan = (m) => {
+
+    };
+
+    const hande_newpoint = (m) => {
+        console.log('asd');
+    };
+
+    // implementing the client side message functions
+    
+    const send_newpoint = (pos) => {
+        const message = {
+            'type': ClientMessage.PUT,
+            'position': pos 
+        };
+        game.socket.send(JSON.stringify(message));
+    };
+
+    const send_fullscan = () => {
+
+    };
+
+    // setting up listeners for the join game button and
+    // starting websocket communication with the server
+
+    const join_button = document.getElementById('join-btn');
+    join_button.onclick = () => {
+        const join_code = getJoinCode();
+        setup_websocket(join_code);
+    };
+    
+    // setting up client movement controls and listeners
 
     canvas.onmousemove = (e) => {
         let rect = canvas.getBoundingClientRect();
