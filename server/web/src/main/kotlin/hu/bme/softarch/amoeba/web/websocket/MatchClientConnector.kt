@@ -38,15 +38,21 @@ class MatchClientConnector {
 
     @OnOpen
     fun onOpen(session: Session, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String) {
+        fun error(message: String) {
+            session.asyncRemote.sendObject(Error(message))
+        }
+
         log.debug("WS client connected for game #$gameId")
 
         val controller = getOrInitController(gameId)
         if (controller == null) {
-            session.asyncRemote.sendText("Invalid game id")
+            error("Invalid game id")
             return
         }
 
-        controller.registerClient(joinCode, session.id) { session.asyncRemote.sendObject(it) }
+        if (!controller.registerClient(joinCode, session.id) { session.asyncRemote.sendObject(it) }) {
+            error("Invalid join code id")
+        }
     }
 
     @OnMessage
@@ -60,16 +66,25 @@ class MatchClientConnector {
     }
 
     @OnError
-    fun onError(session: Session, error: Throwable) {
+    fun onError(session: Session?, error: Throwable) {
+        if (session == null) {
+            log.debug("Error while connecting to match ws endpoint", error)
+            return
+        }
+
+        fun error(message: String) {
+            session.asyncRemote.sendObject(Error(message))
+        }
+
         when (error) {
             is JsonParseException -> {
                 log.debug("Invalid json message for match ws endpoint", error)
-                session.asyncRemote.sendObject(Error("Invalid JSON message received"))
+                error("Invalid JSON message received")
             }
             is CloseException -> log.debug("Close in ws match communication", error)
             else -> {
                 log.info("Error in game ws: ", error)
-                session.asyncRemote.sendObject(Error("Error while processing message"))
+                error("Error while processing message")
             }
         }
     }

@@ -35,6 +35,11 @@ class GameHandler {
         joinInternal(invite)
     }
 
-    internal fun joinInternal(invite: String): GameJoinData? = inviteStore.fetch(invite)?.oPass?.let(::GameJoinData)
+    internal fun joinInternal(invite: String): GameJoinData? = inviteStore.fetch(invite)?.let {
+        GameJoinData(
+                id = it.id,
+                clientJoinCode = it.oPass
+        )
+    }
 
 }

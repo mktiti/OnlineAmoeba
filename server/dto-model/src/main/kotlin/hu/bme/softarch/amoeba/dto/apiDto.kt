@@ -14,5 +14,6 @@ data class CreatedGameData(
 )
 
 data class GameJoinData(
+    val id: Long,
     val clientJoinCode: String
 )
