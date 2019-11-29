@@ -307,6 +307,7 @@ const handleHostResponseResults = (result, game) => {
 const handleJoinResponseResults = (result, game) => {
     const join_text = document.getElementById('join-text');
     join_text.value = result['clientJoinCode'];
+    console.log(result);
     game.id = result['id'];
 };
 
@@ -332,7 +333,7 @@ const getInviteCode = () => {
 /**
  * Fetches the number of tiles to win from the range label. 
  */
-const getTileToWin = () => {
+const getTilesToWin = () => {
     const range_label = document.getElementById('range-label');
     return range_label.textContent;
 };
@@ -376,7 +377,7 @@ window.addEventListener('load', () => {
 
     const generate_button = document.getElementById('gen-btn');
     generate_button.onclick = async () => {
-        const invite_code = getJoinCode();
+        const invite_code = getInviteCode();
 
         const response = await fetch(
             `${REST_URL}/${invite_code}`, {
@@ -393,10 +394,10 @@ window.addEventListener('load', () => {
     // sets up websocket and its event listeners by
     // providing the `join_code` 
     const setup_websocket = (join_code) => {
-        socket = new WebSocket(
+        game.socket = new WebSocket(
             `${WS_URL}/${game.id}/${join_code}`);
 
-        socket.addEventListener('message', (e) => {
+        game.socket.addEventListener('message', (e) => {
             // return if no data is returned
             if (e.data === undefined)
                 return;
@@ -448,11 +449,24 @@ window.addEventListener('load', () => {
     };
 
     const handle_partscan = (m) => {
-
+        
     };
 
-    const hande_newpoint = (m) => {
-        console.log('asd');
+    const handle_newpoint = (m) => {
+        game.is_player_turn = game.sign !== m['sign'];
+        field.set(toString(m['position']), m['sign']);
+    };
+
+    const handle_event = (m) => {
+        console.log(m);
+    };
+
+    const handle_gameresult = (m) => {
+        console.log(m);
+    };
+
+    const handle_error = (m) => {
+        console.log(m);
     };
 
     // implementing the client side message functions
@@ -466,6 +480,13 @@ window.addEventListener('load', () => {
     };
 
     const send_fullscan = () => {
+        const message = {
+            'type': ClientMessage.FULLSCAN
+        };
+        game.socket.send(JSON.stringify());
+    };
+
+    const send_partscan = () => {
 
     };
 
@@ -493,8 +514,7 @@ window.addEventListener('load', () => {
     canvas.onclick = (e) => {
         const coord = computeRelativeCoord(mouse, pos, canvas);
         if (game.is_player_turn) {
-            console.log('asd');
-            socket.send({});
+            send_newpoint(coord);
         }
     };
     
@@ -506,11 +526,7 @@ window.addEventListener('load', () => {
         is_inside = true; 
     };
   
-    const field = new Map([
-        [toString({x: 0, y: 0}), 'X'],
-        [toString({x: 1, y: 2}), 'O'],
-        [toString({x: 0, y: 4}), 'O']
-    ]);
+    const field = new Map();
 
     const update = createUpdate(
         pos, mouse, canvas, field, selected);
