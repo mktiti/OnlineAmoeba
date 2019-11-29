@@ -3,10 +3,11 @@ package hu.bme.softarch.amoeba.web.websocket
 import com.fasterxml.jackson.core.JsonParseException
 import hu.bme.softarch.amoeba.dto.WsClientMessage
 import hu.bme.softarch.amoeba.dto.WsServerMessage.Error
-import hu.bme.softarch.amoeba.web.api.InMemLobbyService
+import hu.bme.softarch.amoeba.web.api.DbLobbyService
 import hu.bme.softarch.amoeba.web.api.LobbyService
 import hu.bme.softarch.amoeba.web.util.logger
 import org.eclipse.jetty.websocket.api.CloseException
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import javax.websocket.*
 import javax.websocket.server.PathParam
@@ -20,19 +21,16 @@ class MatchClientConnector {
     companion object {
         private val matchLock = ReentrantLock()
 
-        private val matches = mutableMapOf<Long, MatchController>()
+        private val matches = Collections.synchronizedMap(mutableMapOf<Long, MatchController>())
     }
 
     private val log by logger()
 
-    private val lobbyService: LobbyService = InMemLobbyService
+    private val lobbyService: LobbyService = DbLobbyService
 
     private fun getOrInitController(gameId: Long): MatchController? {
-        return matches[gameId] ?: matchLock.withLock {
-            matches[gameId] ?: MatchController(InMemLobbyService.getGame(gameId)
-                    ?: return null).apply {
-                matches[gameId] = this
-            }
+        return matches.computeIfAbsent(gameId) {
+            MatchController(lobbyService.getGame(gameId) ?: return@computeIfAbsent null)
         }
     }
 

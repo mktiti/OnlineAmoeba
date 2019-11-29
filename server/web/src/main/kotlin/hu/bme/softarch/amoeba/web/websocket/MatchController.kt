@@ -28,8 +28,8 @@ class MatchController(fullGame: FullGame) {
 
     private var waitingFor: Sign? = if (fullGame.data.xTiles.size == fullGame.data.oTiles.size) Sign.X else Sign.O
 
-    private val xData = ClientData(fullGame.info.xPass)
-    private val oData = ClientData(fullGame.info.oPass)
+    private val xData = ClientData(fullGame.info.hostCode)
+    private val oData = ClientData(fullGame.info.clientCode)
 
     fun registerClient(joinCode: String, channelId: String, channel: (WsServerMessage) -> Unit): Boolean = onActor(joinCode, channelId) { player, _ ->
         addChannel(player, channelId, channel)

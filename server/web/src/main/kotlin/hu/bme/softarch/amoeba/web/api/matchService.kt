@@ -13,7 +13,7 @@ import javax.ws.rs.core.MediaType
 @Produces(MediaType.APPLICATION_JSON)
 class GameHandler {
 
-    private val lobbyService: LobbyService = InMemLobbyService
+    private val lobbyService: LobbyService = DbLobbyService
     private val inviteStore: InviteStore = SyncInviteStore()
 
     @POST
@@ -26,7 +26,7 @@ class GameHandler {
         val game = lobbyService.createGame(params.tilesToWin)
         val invite = inviteStore.addGame(game)
 
-        return CreatedGameData(id = game.id, inviteCode = invite, hostJoinCode = game.xPass)
+        return CreatedGameData(id = game.id, inviteCode = invite, hostJoinCode = game.hostCode)
     }
 
     @GET
@@ -38,7 +38,7 @@ class GameHandler {
     internal fun joinInternal(invite: String): GameJoinData? = inviteStore.fetch(invite)?.let {
         GameJoinData(
                 id = it.id,
-                clientJoinCode = it.oPass
+                clientJoinCode = it.clientCode
         )
     }
 

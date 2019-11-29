@@ -5,12 +5,12 @@ import java.time.LocalDateTime
 
 data class GameInfo(
     val id: Long,
-    val createdAt: LocalDateTime,
+    val lastStored: LocalDateTime,
 
     val toWin: Int,
 
-    val xPass: String,
-    val oPass: String
+    val hostCode: String,
+    val clientCode: String
 )
 
 data class GameData(
@@ -19,6 +19,6 @@ data class GameData(
 )
 
 data class FullGame(
-        val info: GameInfo,
-        val data: GameData
+    val info: GameInfo,
+    val data: GameData
 )

@@ -7,7 +7,9 @@ import hu.bme.softarch.amoeba.game.web.generated.ProjectInfo
 import hu.bme.softarch.amoeba.web.util.Server.startServer
 import hu.bme.softarch.amoeba.web.api.GameHandler
 import hu.bme.softarch.amoeba.dto.NewGameData
+import hu.bme.softarch.amoeba.web.db.DbContextHolder
 import hu.bme.softarch.amoeba.web.util.setLogLocation
+import java.nio.file.Paths
 import kotlin.system.exitProcess
 
 class Arguments(parser: ArgParser) {
@@ -20,6 +22,8 @@ class Arguments(parser: ArgParser) {
 
     val logLocation by parser.storing("-l", "--log", help = "Log file destination").default("log")
 
+    val dbLocation by parser.storing("-d", "--database", help = "Database folder destination").default("db")
+
 }
 
 fun main(args: Array<String>) = mainBody {
@@ -30,6 +34,7 @@ fun main(args: Array<String>) = mainBody {
         }
 
         setLogLocation(logLocation)
+        DbContextHolder.initDb(Paths.get(dbLocation))
 
         val testHandler = GameHandler()
         val game = testHandler.createInternal(NewGameData(tilesToWin = 5))
