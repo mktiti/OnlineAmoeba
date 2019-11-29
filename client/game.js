@@ -292,9 +292,6 @@ const setRangeLabel = () => {
  * code generation.
  */
 const handleHostResponseResults = (result, game) => {
-    const join_label = document.getElementById('join-label');
-    join_label.value = result['hostJoinCode'];
-
     const invite_label = document.getElementById('invite-label');
     invite_label.value = result['inviteCode']
     game.id = result['id'];
@@ -341,6 +338,13 @@ const getTilesToWin = () => {
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
+    
+    // preventing the dropdown menu from closing on click
+    $(document).on(
+           'click', '.dropdown-menu', (e) => {
+        e.stopPropagation();
+    });
+
 
     let mouse = {x: 0, y: 0}; // location of mouse in pixel
     let pos = {x : 0, y: 0}; // location of the screen 
@@ -370,6 +374,8 @@ window.addEventListener('load', () => {
 
         const result = await response.json();
         handleHostResponseResults(result, game);
+        
+        setup_websocket(result['hostJoinCode']); 
     };
 
     // setting up listeners for the join window
@@ -445,7 +451,7 @@ window.addEventListener('load', () => {
     };
 
     const handle_fullscan = (m) => {
-
+        
     };
 
     const handle_partscan = (m) => {
@@ -453,6 +459,7 @@ window.addEventListener('load', () => {
     };
 
     const handle_newpoint = (m) => {
+        console.log(m);
         game.is_player_turn = game.sign !== m['sign'];
         field.set(toString(m['position']), m['sign']);
     };
