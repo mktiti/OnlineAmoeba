@@ -21,7 +21,7 @@ let is_ingame = false;
 
 const REST_URL = `http://localhost:${PORT}/api/matches`; 
 const WS_URL = `ws://localhost:${PORT}/game`;
-
+const STAT_URL = `http://localhost:${PORT}/api/matches/stats`;
 
 /**
  * Enumeration that stores the possible signs.
@@ -42,7 +42,8 @@ const ServerMessage = {
     NEWPOINT: 'new-point',
     EVENT:  'event',
     GAMERESULT: 'game-result',
-    ERROR:  'error'
+    ERROR:  'error',
+    PING: 'ping'
 };
 
 
@@ -52,7 +53,8 @@ const ServerMessage = {
 const ClientMessage = {
     PUT: 'put',
     FULLSCAN: 'full-scan',
-    PARTSCAN: 'part-scan'
+    PARTSCAN: 'part-scan',
+    PING: 'ping'
 };
 
 
@@ -429,39 +431,50 @@ window.addEventListener('load', () => {
     const stat_button = document.getElementById('stat-btn');
     const stats_modal = document.getElementById('stats-modal');        
 
-    stat_button.onclick = (e) => {
+    stat_button.onclick = async (e) => {
         stats_modal.style.display = 'block';
        
-        var d3 = Plotly.d3;
-        var img_jpg= d3.select('#jpg-export');
+        const response = await fetch(
+            STAT_URL, { 
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        console.log(result);
         
-        // Plotting the Graph
+        // plotting win lose ratio
+        const pie_data = [{
+            values: [result['xwins'], result['owins']],
+            labels: ['X', 'O'],
+            type: 'pie'
+        }];
+
+        const pie_layout = {title : 'Win / Lose ratio'};
+        Plotly.plot('pie_div', pie_data, pie_layout);
+
+        // plotting average run round distribution
+        const keys = Object.keys(
+            result['averageRoundsByTilesToWin']);
         
-        var trace={x:[3,9,8,10,4,6,5],y:[5,7,6,7,8,9,8],type:"scatter"};
-        var trace1={x:[3,4,1,6,8,9,5],y:[4,2,5,2,1,7,3],type:"scatter"};
-        var data = [trace,trace1];
-        var layout = {title : "Simple JavaScript Graph"};
-        Plotly.plot(
-          'plotly_div',
-           data,
-           layout)
+        const vals = keys.map((k) => {
+            return result['averageRoundsByTilesToWin'][k];
+        });
+
+        const bar_data = [{
+            x: keys,
+            y: vals,
+            type: 'bar',
+            text: keys.map((k) => `${k}`) 
+        }];
         
-        // static image in jpg format
-        
-        .then(
-            function(gd)
-             {
-              Plotly.toImage(gd,{height:300,width:300})
-                 .then(
-                     function(url)
-                 {
-                     img_jpg.attr("src", url);
-                     return Plotly.toImage(gd,{format:'jpeg',height:400,width:400});
-                 }
-                 )
-    });
-     
-    };
+        let dist_layout = {title : 'Average rounds by tiles'};
+        Plotly.plot('dist_div', bar_data, dist_layout);
+                
+   };
+
     $('#tile-slider').slider({
         ticks: [3, 4, 5, 6, 7]
     });
@@ -549,6 +562,7 @@ window.addEventListener('load', () => {
                 return;
             
             const message = JSON.parse(e.data);
+            console.log(message);
 
             switch (message['type']) {
                 case ServerMessage.INFO:
@@ -578,11 +592,17 @@ window.addEventListener('load', () => {
                 case ServerMessage.ERROR:
                     handleError(message);
                     break;
+
+                case ServerMessage.PING:
+                    console.log(asd);
+                    break;
             };
         });
 
         game.socket.addEventListener('open', (e) => {
             sendFullscan();
+            
+            setInterval(sendPing, 1000);
         });
     }
     
@@ -654,6 +674,11 @@ window.addEventListener('load', () => {
         };
         game.socket.send(JSON.stringify(message));
     };
+
+    const sendPing = () => {
+        const message = {'type': ClientMessage.PING};
+        game.socket.send(JSON.stringify(message));
+    }
 
     const sendPartscan = () => {
 
