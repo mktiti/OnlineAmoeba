@@ -8,36 +8,74 @@ import hu.bme.softarch.amoeba.game.MutableField
 import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
+import hu.bme.softarch.amoeba.web.api.GameData
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.withLock
 
-class MatchController(fullGame: FullGame) {
+typealias OutChannel = (WsServerMessage) -> Unit
+
+typealias ResultCallback = (id: Long, winner: Sign, rounds: Int) -> Unit
+
+class MatchController(
+        fullGame: FullGame,
+        private val gameEndCallback: ResultCallback
+) {
+
+    enum class RegisterResult {
+        INVALID_JOIN, MATCH_CLOSED, SUCCESS
+    }
 
     private inner class ClientData(
             val joinCode: String
     ) {
-        val outChannels = mutableMapOf<String, (WsServerMessage) -> Unit>()
+        val outChannels = mutableMapOf<String, OutChannel>()
     }
+
+    private val channelLock: ReadWriteLock = ReentrantReadWriteLock()
 
     private val placeCheck = AtomicBoolean()
 
+    private val gameInfo = fullGame.info
     private val gameField: MutableField = MapField(
             toWin = fullGame.info.toWin,
             xs = fullGame.data.xTiles,
             os = fullGame.data.oTiles
     )
 
+    private var round = fullGame.data.xTiles.size + fullGame.data.oTiles.size
+
     private var waitingFor: Sign? = if (fullGame.data.xTiles.size == fullGame.data.oTiles.size) Sign.X else Sign.O
 
-    private val xData = ClientData(fullGame.info.xPass)
-    private val oData = ClientData(fullGame.info.oPass)
+    private val xData = ClientData(fullGame.info.hostCode)
+    private val oData = ClientData(fullGame.info.clientCode)
 
-    fun registerClient(joinCode: String, channelId: String, channel: (WsServerMessage) -> Unit): Boolean = onActor(joinCode, channelId) { player, _ ->
-        addChannel(player, channelId, channel)
+    fun registerClient(joinCode: String, channelId: String, channel: OutChannel, ignoreClose: Boolean = false): RegisterResult {
+        return channelLock.readLock().withLock {
+            if (!ignoreClose && xData.outChannels.isEmpty() && oData.outChannels.isEmpty()) {
+                RegisterResult.MATCH_CLOSED
+            } else {
+                val valid = onActor(joinCode, channelId) { player, _ ->
+                    addChannel(player, channelId, channel)
+                }
+                if (valid) {
+                    RegisterResult.SUCCESS
+                } else  {
+                    RegisterResult.INVALID_JOIN
+                }
+            }
+        }
     }
 
     fun onMessage(joinCode: String, message: WsClientMessage): Boolean = onActor(joinCode, message, this::onMessage)
 
-    fun unregisterClient(joinCode: String, channelId: String) = onActor(joinCode, channelId, this::removeChannel)
+    fun unregisterClient(joinCode: String, channelId: String): Boolean {
+        return channelLock.writeLock().withLock {
+            onActor(joinCode, channelId, this::removeChannel)
+            xData.outChannels.isEmpty() && oData.outChannels.isEmpty()
+        }
+    }
 
     private fun <T> onActor(joinCode: String, param: T, action: (Sign, T) -> Unit): Boolean {
         val player = mapSign(joinCode) ?: return false
@@ -81,9 +119,11 @@ class MatchController(fullGame: FullGame) {
             send(player, Error("Not your turn"))
         } else {
             if (gameField[position] == null) {
+                round++
                 val winRow = gameField.set(position, player)
                 send(NewPoint(player, position))
                 waitingFor = if (winRow != null) {
+                    gameEndCallback(gameInfo.id, player, round)
                     send(GameResult(player, winRow))
                     null
                 } else {
@@ -121,7 +161,7 @@ class MatchController(fullGame: FullGame) {
         }
     }
 
-    private fun addChannel(player: Sign, channelId: String, channel: (WsServerMessage) -> Unit) {
+    private fun addChannel(player: Sign, channelId: String, channel: OutChannel) {
         data(player).outChannels[channelId] = channel
 
         send(OpponentEvent("New client joined for $player"))
@@ -132,5 +172,13 @@ class MatchController(fullGame: FullGame) {
         data(player).outChannels.remove(channelId)
         send(!player, OpponentEvent("Client closed for $player"))
     }
+
+    fun getGame() = FullGame(
+        info = gameInfo,
+        data = GameData(
+            xTiles = gameField.positionsOf(Sign.X).toList(),
+            oTiles = gameField.positionsOf(Sign.O).toList()
+        )
+    )
 
 }

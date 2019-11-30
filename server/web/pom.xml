@@ -16,6 +16,7 @@
     <properties>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <jersey.version>2.27</jersey.version>
+        <jdbi.version>3.11.1</jdbi.version>
     </properties>
 
     <dependencies>
@@ -33,6 +34,36 @@
             <groupId>com.xenomachina</groupId>
             <artifactId>kotlin-argparser</artifactId>
             <version>2.0.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>2.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jdbi</groupId>
+            <artifactId>jdbi3-kotlin</artifactId>
+            <version>3.11.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jdbi</groupId>
+            <artifactId>jdbi3-core</artifactId>
+            <version>${jdbi.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jdbi</groupId>
+            <artifactId>jdbi3-kotlin</artifactId>
+            <version>${jdbi.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jdbi</groupId>
+            <artifactId>jdbi3-kotlin-sqlobject</artifactId>
+            <version>${jdbi.version}</version>
         </dependency>
 
         <dependency>
@@ -119,7 +150,6 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
-            <version>${kotlin.version}</version>
         </dependency>
 
         <dependency>
@@ -160,10 +190,7 @@
 
                 <configuration>
                     <nowarn>false</nowarn>
-                    <sourceDirs>
-                        <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-                        <sourceDir>${project.build.directory}/src/main/kotlin</sourceDir>
-                    </sourceDirs>
+                    <jvmTarget>${kotlin.compiler.jvtTarget}</jvmTarget>
                 </configuration>
 
                 <executions>
@@ -173,6 +200,13 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
+
+                        <configuration>
+                            <sourceDirs>
+                                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+                                <sourceDir>${project.build.directory}/src/main/kotlin</sourceDir>
+                            </sourceDirs>
+                        </configuration>
                     </execution>
 
                     <execution>
@@ -180,6 +214,12 @@
                         <goals>
                             <goal>test-compile</goal>
                         </goals>
+
+                        <configuration>
+                            <sourceDirs>
+                                <sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
+                            </sourceDirs>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -208,7 +248,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>2.22.1</version>
             </plugin>
 
             <plugin>
