@@ -68,11 +68,24 @@
                             </div>
                         </div>
                     </div>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="stat-btn" aria-haspopup="true" aria-expanded="false">
+                           Stats 
+                        </button>  
+                    </div>
                 </div>
             </div>       
         </div>
         <canvas id="canvas"></canvas>
-        <div id="finish-modal" class="modal">
+        <div id="stats-modal" class="stats-modal">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div id="plotly_div"></div> 
+                    <img id="jpg-export"></img>
+                </div>
+           </div>
+        </div>
+        <div id="finish-modal" class="finish-modal">
             <div class="modal-content">
                 <div class="modal-body">
                     <label id="winner-label"></label>
@@ -80,6 +93,7 @@
            </div>
         </div>
     </body>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>

@@ -426,6 +426,42 @@ const getTilesToWin = () => {
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
     
+    const stat_button = document.getElementById('stat-btn');
+    const stats_modal = document.getElementById('stats-modal');        
+
+    stat_button.onclick = (e) => {
+        stats_modal.style.display = 'block';
+       
+        var d3 = Plotly.d3;
+        var img_jpg= d3.select('#jpg-export');
+        
+        // Plotting the Graph
+        
+        var trace={x:[3,9,8,10,4,6,5],y:[5,7,6,7,8,9,8],type:"scatter"};
+        var trace1={x:[3,4,1,6,8,9,5],y:[4,2,5,2,1,7,3],type:"scatter"};
+        var data = [trace,trace1];
+        var layout = {title : "Simple JavaScript Graph"};
+        Plotly.plot(
+          'plotly_div',
+           data,
+           layout)
+        
+        // static image in jpg format
+        
+        .then(
+            function(gd)
+             {
+              Plotly.toImage(gd,{height:300,width:300})
+                 .then(
+                     function(url)
+                 {
+                     img_jpg.attr("src", url);
+                     return Plotly.toImage(gd,{format:'jpeg',height:400,width:400});
+                 }
+                 )
+    });
+     
+    };
     $('#tile-slider').slider({
         ticks: [3, 4, 5, 6, 7]
     });
@@ -436,13 +472,15 @@ window.addEventListener('load', () => {
         e.stopPropagation();
     });
    
-    const modal = document.getElementById('finish-modal');
+    const finish_modal = document.getElementById('finish-modal');
     
     // when the user clicks anywhere outside of 
     // the modal, close it 
     window.addEventListener('click', (e) => {
-        if (e.target == modal) {
-            modal.style.display = 'none';
+        if (e.target == finish_modal) {
+            finish_modal.style.display = 'none';
+        } else if (e.target == stats_modal) {
+            stats_modal.style.display = 'none';
         }
     });
 
@@ -587,7 +625,7 @@ window.addEventListener('load', () => {
         });
 
         // creating a modal popup with winner info
-        modal.style.display = 'block';
+        finish_modal.style.display = 'block';
         const modal_text = document.getElementById(
             'winner-label');
         modal_text.innerHTML = 
