@@ -16,6 +16,8 @@ interface LobbyService {
 
     fun popInvite(invite: String): GameInfo?
 
+    fun updateGame(game: FullGame): Unit
+
 }
 
 class DbLobbyService(
@@ -78,4 +80,9 @@ class DbLobbyService(
 
         return game
     }
+
+    override fun updateGame(game: FullGame) {
+        gameRepo.archive(game)
+    }
+
 }

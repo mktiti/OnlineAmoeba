@@ -9,7 +9,7 @@ import java.nio.file.Path
 
 object DbContextHolder {
 
-    private const val FILE_CONNECT_STRING_TEMPLATE = """jdbc:hsqldb:file:"%s"/amoeba-db/;shutdown=true"""
+    private const val FILE_CONNECT_STRING_TEMPLATE = """jdbc:hsqldb:file:%s/amoeba-db/;shutdown=true"""
 
     private const val DB_INIT_FILE = "/sql/create-db.sql"
     private const val DB_DROP_FILE = "/sql/drop-db.sql"

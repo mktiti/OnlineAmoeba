@@ -8,11 +8,15 @@ import hu.bme.softarch.amoeba.game.MutableField
 import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
+import hu.bme.softarch.amoeba.web.api.GameData
+import hu.bme.softarch.amoeba.web.api.GameInfo
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
+
+typealias OutChannel = (WsServerMessage) -> Unit
 
 class MatchController(fullGame: FullGame) {
 
@@ -23,13 +27,14 @@ class MatchController(fullGame: FullGame) {
     private inner class ClientData(
             val joinCode: String
     ) {
-        val outChannels = mutableMapOf<String, (WsServerMessage) -> Unit>()
+        val outChannels = mutableMapOf<String, OutChannel>()
     }
 
     private val channelLock: ReadWriteLock = ReentrantReadWriteLock()
 
     private val placeCheck = AtomicBoolean()
 
+    private val gameInfo = fullGame.info
     private val gameField: MutableField = MapField(
             toWin = fullGame.info.toWin,
             xs = fullGame.data.xTiles,
@@ -41,9 +46,9 @@ class MatchController(fullGame: FullGame) {
     private val xData = ClientData(fullGame.info.hostCode)
     private val oData = ClientData(fullGame.info.clientCode)
 
-    fun registerClient(joinCode: String, channelId: String, channel: (WsServerMessage) -> Unit): RegisterResult {
+    fun registerClient(joinCode: String, channelId: String, channel: OutChannel, ignoreClose: Boolean = false): RegisterResult {
         return channelLock.readLock().withLock {
-            if (xData.outChannels.isEmpty() && oData.outChannels.isEmpty()) {
+            if (!ignoreClose && xData.outChannels.isEmpty() && oData.outChannels.isEmpty()) {
                 RegisterResult.MATCH_CLOSED
             } else {
                 val valid = onActor(joinCode, channelId) { player, _ ->
@@ -149,7 +154,7 @@ class MatchController(fullGame: FullGame) {
         }
     }
 
-    private fun addChannel(player: Sign, channelId: String, channel: (WsServerMessage) -> Unit) {
+    private fun addChannel(player: Sign, channelId: String, channel: OutChannel) {
         data(player).outChannels[channelId] = channel
 
         send(OpponentEvent("New client joined for $player"))
@@ -160,5 +165,13 @@ class MatchController(fullGame: FullGame) {
         data(player).outChannels.remove(channelId)
         send(!player, OpponentEvent("Client closed for $player"))
     }
+
+    fun getGame() = FullGame(
+        info = gameInfo,
+        data = GameData(
+            xTiles = gameField.positionsOf(Sign.X).toList(),
+            oTiles = gameField.positionsOf(Sign.O).toList()
+        )
+    )
 
 }

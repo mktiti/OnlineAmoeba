@@ -57,6 +57,8 @@ class DbGameRepo(private val jdbi: Jdbi = DbContextHolder.connection!!) : GameRe
     override fun archive(game: FullGame) = jdbi.useTransaction<DatabaseException> { handle ->
         handle.createUpdate("update Game set lastStored = :time").bind("time", LocalDateTime.now()).execute()
 
+        handle.createUpdate("delete from Tile where gameId = :gameId").bind("gameId", game.info.id).execute()
+
         handle.prepareBatch("insert into Tile (gameId, posX, posY, isX) values (:gameId, :x, :y, :isX)").apply {
             fun PreparedBatch.bind(tiles: Collection<Pos>, isX: Boolean) {
                 val gameId = game.info.id

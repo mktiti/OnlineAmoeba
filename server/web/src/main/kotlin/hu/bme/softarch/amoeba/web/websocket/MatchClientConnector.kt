@@ -8,6 +8,8 @@ import hu.bme.softarch.amoeba.web.api.DbLobbyService
 import hu.bme.softarch.amoeba.web.api.LobbyService
 import hu.bme.softarch.amoeba.web.util.logger
 import org.eclipse.jetty.websocket.api.CloseException
+import java.lang.IllegalArgumentException
+import java.lang.RuntimeException
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantLock
@@ -22,6 +24,8 @@ import kotlin.concurrent.withLock
 class MatchClientConnector @JvmOverloads constructor(
         private val lobbyService: LobbyService = DbLobbyService()
 ) {
+
+    class MatchJoinException(message: String) : RuntimeException(message)
 
     private class ControllerHolder(
             val controller: MatchController
@@ -47,7 +51,7 @@ class MatchClientConnector @JvmOverloads constructor(
             session.asyncRemote.sendObject(Error(message))
         }
 
-        val channel: (WsServerMessage) -> Unit = { session.asyncRemote.sendObject(it) }
+        val channel: OutChannel = { session.asyncRemote.sendObject(it) }
 
         /** Null on invalid game, controller to is-newly-created otherwise */
         fun getOrInitController(): Pair<MatchController, Boolean>? {
@@ -61,32 +65,36 @@ class MatchClientConnector @JvmOverloads constructor(
                         safeController to false
                     } else {
                         lobbyService.getGame(gameId)?.let {
-                            MatchController(it) to true
+                            val matchController = MatchController(it)
+                            if (matchController.registerClient(joinCode, session.id, channel, ignoreClose = true) == MatchController.RegisterResult.INVALID_JOIN) {
+                                throw MatchJoinException("Invalid join code")
+                            } else {
+                                matches[gameId] = matchController
+                            }
+                            matchController to true
                         }
                     }
                 }
             }
         }
 
-        do {
-            val holder = getOrInitController()
-            if (holder == null) {
-                error("Invalid game id")
-                return
-            }
+        try {
+            do {
+                val (controller, isNew) = getOrInitController() ?: throw MatchJoinException("Invalid game id")
 
-            val (controller, isNew) = holder
-            val result = if (isNew) {
-                return
-            } else {
-                controller.registerClient(joinCode, session.id, channel).apply {
-                    if (this == MatchController.RegisterResult.INVALID_JOIN) {
-                        error("Invalid join code")
-                        return
+                val result = if (isNew) {
+                    break
+                } else {
+                    controller.registerClient(joinCode, session.id, channel).apply {
+                        if (this == MatchController.RegisterResult.INVALID_JOIN) {
+                            throw MatchJoinException("Invalid join code")
+                        }
                     }
                 }
-            }
-        } while (result == MatchController.RegisterResult.MATCH_CLOSED)
+            } while (result == MatchController.RegisterResult.MATCH_CLOSED)
+        } catch (mje: MatchJoinException) {
+            error(mje.message ?: "Invalid join parameters")
+        }
     }
 
     @OnMessage
@@ -96,8 +104,14 @@ class MatchClientConnector @JvmOverloads constructor(
 
     @OnClose
     fun onClose(session: Session, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String) {
-        if (matches[gameId]?.unregisterClient(joinCode, session.id) == true) {
-            matches.remove(gameId)
+        val controller = matches[gameId]
+        if (controller != null) {
+            if (controller.unregisterClient(joinCode, session.id)) {
+                matches.remove(gameId)
+                matchInitLock.withLock {
+                    lobbyService.updateGame(controller.getGame())
+                }
+            }
         }
     }
 
