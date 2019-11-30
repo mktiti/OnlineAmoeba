@@ -486,7 +486,7 @@ window.addEventListener('load', () => {
         const invite_code = getInviteCode();
 
         const response = await fetch(
-            `${REST_URL}/${invite_code}`, {
+            `${REST_URL}?invite=${invite_code}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'

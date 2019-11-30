@@ -9,16 +9,19 @@ import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
 import hu.bme.softarch.amoeba.web.api.GameData
-import hu.bme.softarch.amoeba.web.api.GameInfo
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReadWriteLock
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
 typealias OutChannel = (WsServerMessage) -> Unit
 
-class MatchController(fullGame: FullGame) {
+typealias ResultCallback = (id: Long, winner: Sign, rounds: Int) -> Unit
+
+class MatchController(
+        fullGame: FullGame,
+        private val gameEndCallback: ResultCallback
+) {
 
     enum class RegisterResult {
         INVALID_JOIN, MATCH_CLOSED, SUCCESS
@@ -40,6 +43,8 @@ class MatchController(fullGame: FullGame) {
             xs = fullGame.data.xTiles,
             os = fullGame.data.oTiles
     )
+
+    private var round = fullGame.data.xTiles.size + fullGame.data.oTiles.size
 
     private var waitingFor: Sign? = if (fullGame.data.xTiles.size == fullGame.data.oTiles.size) Sign.X else Sign.O
 
@@ -114,9 +119,11 @@ class MatchController(fullGame: FullGame) {
             send(player, Error("Not your turn"))
         } else {
             if (gameField[position] == null) {
+                round++
                 val winRow = gameField.set(position, player)
                 send(NewPoint(player, position))
                 waitingFor = if (winRow != null) {
+                    gameEndCallback(gameInfo.id, player, round)
                     send(GameResult(player, winRow))
                     null
                 } else {

@@ -3,6 +3,7 @@ package hu.bme.softarch.amoeba.web.websocket
 import com.fasterxml.jackson.core.JsonParseException
 import hu.bme.softarch.amoeba.dto.WsClientMessage
 import hu.bme.softarch.amoeba.dto.WsServerMessage.Error
+import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.DbLobbyService
 import hu.bme.softarch.amoeba.web.api.LobbyService
 import hu.bme.softarch.amoeba.web.util.logger
@@ -60,7 +61,7 @@ class MatchClientConnector @JvmOverloads constructor(
                         safeController to false
                     } else {
                         lobbyService.getGame(gameId)?.let {
-                            val matchController = MatchController(it)
+                            val matchController = MatchController(it, this::onGameEnd)
                             if (matchController.registerClient(joinCode, session.id, channel, ignoreClose = true) == MatchController.RegisterResult.INVALID_JOIN) {
                                 throw MatchJoinException("Invalid join code")
                             } else {
@@ -132,6 +133,13 @@ class MatchClientConnector @JvmOverloads constructor(
                 error("Error while processing message")
             }
         }
+    }
+
+    private fun onGameEnd(gameId: Long, winner: Sign, rounds: Int) {
+        matchInitLock.withLock {
+            matches.remove(gameId)
+        }
+        lobbyService.endGame(gameId, winner, rounds)
     }
 
 }

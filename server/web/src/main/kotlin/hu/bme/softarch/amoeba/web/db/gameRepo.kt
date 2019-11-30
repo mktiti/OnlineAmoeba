@@ -12,6 +12,8 @@ import java.time.LocalDateTime
 
 interface GameRepo {
 
+    data class SignWins(val xWins: Int, val yWins: Int)
+
     fun create(game: GameInfo): GameInfo
 
     fun archive(game: FullGame)
@@ -22,7 +24,7 @@ interface GameRepo {
 
     fun saveResult(id: Long, winner: Sign, rounds: Int)
 
-    fun getWinsBySign(): Pair<Int, Int>
+    fun getWinsBySign(): SignWins
 
     fun avgRoundsByToWin(): Map<Int, Float>
 
@@ -87,18 +89,18 @@ class DbGameRepo(private val jdbi: Jdbi = DbContextHolder.connection!!) : GameRe
                 .execute()
     }
 
-    override fun getWinsBySign(): Pair<Int, Int> = jdbi.withHandle<Pair<Int, Int>, DatabaseException> { handle ->
+    override fun getWinsBySign(): GameRepo.SignWins = jdbi.withHandle<GameRepo.SignWins, DatabaseException> { handle ->
         fun wins(x: Boolean): Int = handle.createQuery("select count(id) from Game where xWin = :x")
                 .bind("x", x)
                 .mapTo<Int>()
                 .one()
 
-        wins(true) to wins(false)
+        GameRepo.SignWins(wins(true), wins(false))
     }
 
     override fun avgRoundsByToWin(): Map<Int, Float> = jdbi.withHandle<Map<Int, Float>, DatabaseException> { handle ->
-        handle.createQuery("select tilesToWin, avg(rounds) from Game where rounds is not null")
-                .mapTo<Pair<Int, Float>>()
-                .list().toMap()
+        handle.createQuery("select toWin, avg(rounds) from Game where rounds is not null group by toWin")
+                .map {rs, _ ->  rs.getInt(1) to rs.getFloat(2) }
+                .toMap()
     }
 }

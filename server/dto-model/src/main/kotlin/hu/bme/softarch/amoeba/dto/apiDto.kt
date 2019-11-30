@@ -17,3 +17,9 @@ data class GameJoinData(
     val id: Long,
     val clientJoinCode: String
 )
+
+data class Statistics(
+    val xWins: Int,
+    val oWins: Int,
+    val averageRoundsByTilesToWin: Map<Int, Float>
+)

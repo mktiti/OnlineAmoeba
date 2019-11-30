@@ -1,7 +1,9 @@
 package hu.bme.softarch.amoeba.web.api
 
+import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.db.DatabaseException
 import hu.bme.softarch.amoeba.web.db.DbGameRepo
+import hu.bme.softarch.amoeba.web.db.GameRepo
 import hu.bme.softarch.amoeba.web.util.CodeGenerator
 import hu.bme.softarch.amoeba.web.util.loop
 import java.time.LocalDateTime
@@ -16,14 +18,16 @@ interface LobbyService {
 
     fun popInvite(invite: String): GameInfo?
 
-    fun updateGame(game: FullGame): Unit
+    fun updateGame(game: FullGame)
+
+    fun endGame(id: Long, winner: Sign, rounds: Int)
 
 }
 
 class DbLobbyService(
         private val inviteLength: Int = 6,
         private val joinCodeLength: Int = 10,
-        private val gameRepo: DbGameRepo = DbGameRepo()
+        private val gameRepo: GameRepo = DbGameRepo()
 ) : LobbyService {
 
     companion object {
@@ -83,6 +87,10 @@ class DbLobbyService(
 
     override fun updateGame(game: FullGame) {
         gameRepo.archive(game)
+    }
+
+    override fun endGame(id: Long, winner: Sign, rounds: Int) {
+        gameRepo.saveResult(id, winner, rounds)
     }
 
 }
