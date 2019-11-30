@@ -8,7 +8,7 @@
 
 
 const UNIT = 50;  // size of the unit rectangle
-const DELTA = 10; // fps ( 16 is roughly 60fps )
+const DELTA = 6; // fps ( 16 is roughly 60fps )
 const SPEED = 6; // speed of the movement
 const PROP = 0.2; // proportion of the shape frame 
 const PORT = '8080'
@@ -16,7 +16,8 @@ const PORT = '8080'
 const OFFSET = UNIT * PROP;
 
 // global variable to store if mouse is inside screen
-let is_inside = true;
+let is_inside = false;
+let is_ingame = false;
 
 const REST_URL = `http://localhost:${PORT}/api/matches`; 
 const WS_URL = `ws://localhost:${PORT}/game`;
@@ -60,6 +61,7 @@ const ClientMessage = {
  */
 const drawCircle = (left, top, ctx) => {
     ctx.beginPath();
+    ctx.lineWidth = 5;
     ctx.arc(
         left + (UNIT / 2),
         top + (UNIT / 2),
@@ -73,12 +75,29 @@ const drawCircle = (left, top, ctx) => {
  */
 const drawCross = (left, top, ctx) => {
     ctx.beginPath();
+    ctx.lineWidth = 5;
     ctx.moveTo(left + OFFSET, top + OFFSET);
     ctx.lineTo(left + UNIT - OFFSET, top + UNIT - OFFSET);
     
     ctx.moveTo(left + OFFSET, top + UNIT - OFFSET);
     ctx.lineTo(left + UNIT - OFFSET, top + OFFSET);
     ctx.stroke();
+};
+
+
+/**
+ * Draws the sign at the provided location.
+ */
+const drawSign = (left, top, ctx, sign) => {
+    switch (sign) {
+        case Sign.CROSS:
+            drawCross(left, top, ctx);
+            break;
+
+        case Sign.CIRCLE:
+            drawCircle(left, top, ctx);
+            break;
+    }
 };
 
 
@@ -147,9 +166,9 @@ const computeRelativeCoord = (mouse, pos, canvas) => {
     // shifting back the location of the mouse by the
     // offset of the cells 
     const x_mouse = Math.floor(
-        (mouse.x + offset.x - (UNIT * 0.25)) / UNIT);
+        (mouse.x + offset.x) / UNIT);
     const y_mouse = Math.floor(
-        (mouse.y + offset.y - (UNIT * 0.1)) / UNIT);
+        (mouse.y + offset.y) / UNIT);
   
     // shifting the coordinate to the middle
     const x_shift = Math.floor(size.w / 2) + abs.x + 1;
@@ -167,7 +186,7 @@ const computeRelativeCoord = (mouse, pos, canvas) => {
  * (screen middle) coordinates.
  */
 const draw = (
-        pos, ctx, canvas, field, selected, finished) => {
+        pos, ctx, canvas, field, selected, finished, game) => {
     const size = computeSize(canvas);
 
     // offsets are the value by which the grid is shifted
@@ -177,6 +196,8 @@ const draw = (
 
     ctx.beginPath();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // ctx.fillStyle = '#FFFFFF';
+    // ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.stroke();
 
     // offset to place the 0, 0 point in the middle of
@@ -189,69 +210,98 @@ const draw = (
             const top = (j * UNIT) - offset.y;
             const left = (i * UNIT) - offset.x;
 
+            ctx.lineWidth = 1;
+
             const coord = {
                 x: i - x_shift,
                 y: -(j - y_shift)
             };
              
-            // drawing the line number in every column
-            if (j == 1) {
-                let num_top = (UNIT / 2);
-                let num_left = (i * UNIT) + 
-                    (UNIT / 2) - offset.x;
-                let num = coord.x;
-
-                drawNumber(num_left, num_top, num, ctx);
-            }
-
-            // drawing the line number in every row
-            if (i == 1) {
-                let num_top = (j * UNIT) + 
-                    (UNIT / 1.5) - offset.y;
-                let num_left = (UNIT / 2);
-                let num = coord.y;
-
-                drawNumber(num_left, num_top, num, ctx);
-            }
-
-
-            
             // if the game is finished then the finished
             // argument is a map that stores the location
             // of the winning tile sequence 
-            if (finished && finished.has(toString(coord))) {
-                if (c.x == coord.x && c.y == coord.y) {
-                    ctx.beginPath();
-                    ctx.fillStyle = '#00d300';
-                    ctx.fillRect(left, top, UNIT, UNIT);
-                    ctx.stroke();
-                } 
-            }
+            const c = finished.get(toString(coord));
+
+            if (c && c.x == coord.x && c.y == coord.y) {
+                ctx.beginPath();
+                ctx.fillStyle = '#00d300';
+                ctx.fillRect(left, top, UNIT, UNIT);
+                ctx.stroke();
+            } 
 
             // drawing the highlighted cell
             if (coord.x == selected.x && 
                     coord.y == selected.y) {
                 ctx.beginPath();
-                ctx.fillStyle = '#d3d3d3';
+
+                if (!is_ingame)
+                    ctx.fillStyle = '#d3d3d3';
+                else if (game.is_player_turn)
+                    ctx.fillStyle = '#99ff99';
+                else
+                    ctx.fillStyle = '#ffcccb';
+
                 ctx.fillRect(left, top, UNIT, UNIT);
                 ctx.stroke();
+                
+                ctx.strokeStyle = '#777';
+                drawSign(left, top, ctx, game.sign);
+                ctx.strokeStyle = '#000000';
             } 
+
+            ctx.lineWidth = 1; 
             
             ctx.beginPath();
             ctx.rect(left, top, UNIT, UNIT);
             ctx.stroke();
-            
-            switch (field.get(toString(coord))) {
-                case Sign.CROSS:
-                    drawCross(left, top, ctx);
-                    break;
 
-                case Sign.CIRCLE:
-                    drawCircle(left, top, ctx);
-                    break;
-            }
+            drawSign(
+                left, top, ctx, field.get(toString(coord)));
         }
     }
+
+    // drawing the frame with the row and column numbers
+
+    ctx.beginPath();
+    ctx.clearRect(0, 0, canvas.width, UNIT);
+    ctx.clearRect(0, 0, UNIT, canvas.height);
+    ctx.stroke();
+    
+    // drawing the column numbers along horizontal axis
+    for (let j = 0; j <= size.h + 1; j++) {
+        let num_top = (j * UNIT) + 
+            (UNIT / 1.5) - offset.y;
+        let num_left = (UNIT / 2);
+        let num = -(j - y_shift);
+        
+        drawNumber(num_left, num_top, num, ctx);
+    } 
+    
+    // drawing the row numbers along vertical axis
+    for (let i = 0; i <= size.w + 1; i++) {
+        let num_top = (UNIT / 2);
+        let num_left = (i * UNIT) + 
+            (UNIT / 2) - offset.x;
+        let num = i - x_shift;
+        
+        drawNumber(num_left, num_top, num, ctx);
+    }
+
+    ctx.beginPath();
+    // clearing the upper left UNIT square where numbers
+    // row and column numbers would overlap
+    ctx.clearRect(0, 0, UNIT, UNIT);
+
+    // clearing the left side line to give a framed
+    // look to the canvas
+    ctx.clearRect(canvas.width - UNIT, 0, 
+        canvas.width, canvas.height);
+
+    // clearing a small line from the buttom for the same
+    // reason
+    ctx.clearRect(0, canvas.height - UNIT / 8, 
+        canvas.width, canvas.height);
+    ctx.stroke();
 };
 
 
@@ -259,9 +309,8 @@ const draw = (
  * Creates the update callback function.
  */
 const createUpdate = (
-        pos, mouse, canvas, field, selected) => {
-    let prev_time = new Date().getTime();
-    let time = 0;
+        pos, mouse, canvas, field, 
+        selected, finished, game) => {
 
     const ctx = canvas.getContext('2d');
     
@@ -285,38 +334,28 @@ const createUpdate = (
     };
 
     const update = () => {
+        let is_active = is_ingame && is_inside;
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight - 100;
 
-        const curr_time = new Date().getTime();
-        const dt = curr_time - prev_time; 
-        prev_time = curr_time;
-            
-        time += dt;
-        // updating at every 16th milisecond is
-        // roughly equal to 60 frames / second
-        if (time > DELTA) {
-            time = 0;
+        if (is_active && isMovingRight())
+            pos.x -= SPEED;
 
-            if (isMovingRight() && is_inside)
-                pos.x -= SPEED;
+        else if (is_active && isMovingLeft())
+            pos.x += SPEED; 
 
-            else if (isMovingLeft() && is_inside)
-                pos.x += SPEED; 
+        if (is_active && isMovingTop())
+            pos.y += SPEED;
 
-            if (isMovingTop() && is_inside)
-                pos.y += SPEED;
-
-            else if (isMovingBottom() && is_inside)
-                pos.y -= SPEED;
-           
-            draw(pos, ctx, canvas, field, selected);
-        }
+        else if (is_active && isMovingBottom())
+            pos.y -= SPEED;
         
-        if (time > DELTA) {
-
-        }
-        window.requestAnimationFrame(update);
+        draw(pos, ctx, canvas, field, selected, finished, game);
+        
+        setTimeout(() => {
+            window.requestAnimationFrame(update);
+        }, DELTA);
     };
 
     return update;
@@ -332,24 +371,16 @@ const toString = (coordinates) => {
 
 
 /**
- * Sets the label of the range slider.
- */
-const setRangeLabel = () => {
-    const label = document.getElementById('range-label');
-    const range = document.getElementById('label-setter');
-
-    label.textContent = range.value;
-};
-
-
-/**
  * Handles the result of the host's join and invite
  * code generation.
  */
 const handleHostResponseResults = (result, game) => {
     const invite_label = document.getElementById('invite-label');
-    invite_label.value = result['inviteCode']
+    invite_label.value = result['inviteCode'];
     game.id = result['id'];
+
+    const host_label = document.getElementById('host-label');
+    host_label.value = result['hostJoinCode'];
 };
 
 
@@ -359,7 +390,6 @@ const handleHostResponseResults = (result, game) => {
 const handleJoinResponseResults = (result, game) => {
     const join_text = document.getElementById('join-text');
     join_text.value = result['clientJoinCode'];
-    console.log(result);
     game.id = result['id'];
 };
 
@@ -386,20 +416,33 @@ const getInviteCode = () => {
  * Fetches the number of tiles to win from the range label. 
  */
 const getTilesToWin = () => {
-    const range_label = document.getElementById('range-label');
-    return range_label.textContent;
+    const tile_slider = document.getElementById('tile-slider');
+    return tile_slider.value;
 };
 
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
     
+    $('#tile-slider').slider({
+        ticks: [3, 4, 5, 6, 7]
+    });
+    
     // preventing the dropdown menu from closing on click
     $(document).on(
            'click', '.dropdown-menu', (e) => {
         e.stopPropagation();
     });
-
+   
+    const modal = document.getElementById('finish-modal');
+    
+    // when the user clicks anywhere outside of 
+    // the modal, close it 
+    window.addEventListener('click', (e) => {
+        if (e.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
 
     let mouse = {x: 0, y: 0}; // location of mouse in pixel
     let pos = {x : 0, y: 0}; // location of the screen 
@@ -430,7 +473,7 @@ window.addEventListener('load', () => {
         const result = await response.json();
         handleHostResponseResults(result, game);
         
-        setup_websocket(result['hostJoinCode']); 
+        startGame(result['hostJoinCode']); 
     };
 
     // setting up listeners for the join window
@@ -454,7 +497,9 @@ window.addEventListener('load', () => {
 
     // sets up websocket and its event listeners by
     // providing the `join_code` 
-    const setup_websocket = (join_code) => {
+    const startGame = (join_code) => {
+        is_ingame = true;
+
         game.socket = new WebSocket(
             `${WS_URL}/${game.id}/${join_code}`);
 
@@ -467,73 +512,95 @@ window.addEventListener('load', () => {
 
             switch (message['type']) {
                 case ServerMessage.INFO:
-                    handle_info(message);
+                    handleInfo(message);
                     break;
 
                 case ServerMessage.FULLSCAN:
-                    handle_fullscan(message);
+                    handleFullscan(message);
                     break;
 
                 case ServerMessage.PARTSCAN:
-                    handle_partscan(message);
+                    handlePartscan(message);
                     break;
 
                 case ServerMessage.NEWPOINT:
-                    handle_newpoint(message);
+                    handleNewpoint(message);
                     break;
 
                 case ServerMessage.EVENT:
-                    handle_event(message);
+                    handleEvent(message);
                     break;
 
                 case ServerMessage.GAMERESULT:
-                    handle_gameresult(message);
+                    handleGameresult(message);
                     break;
 
                 case ServerMessage.ERROR:
-                    handle_error(message);
+                    handleError(message);
                     break;
             };
+        });
+
+        game.socket.addEventListener('open', (e) => {
+            sendFullscan();
         });
     }
     
     // implementing callback function for the websocket
     // server side communication
 
-    const handle_info = (m) => {
+    const handleInfo = (m) => {
         game.sign = m['sign']
-        game.is_player_turn = game.sign === m['waitingFor'];
+        game.is_player_turn = game.sign == m['waitingFor'];
     };
 
-    const handle_fullscan = (m) => {
+    const handleFullscan = (m) => {
+        resetField();
+        
+        m['xs'].forEach((c) => {
+            field.set(toString(c), Sign.CROSS);                   
+        });
+
+        m['os'].forEach((c) => {
+            field.set(toString(c), Sign.CIRCLE);
+        });
+    };
+
+    const handlePartscan = (m) => {
         
     };
 
-    const handle_partscan = (m) => {
-        
-    };
-
-    const handle_newpoint = (m) => {
-        console.log(m);
-        game.is_player_turn = game.sign !== m['sign'];
+    const handleNewpoint = (m) => {
+        game.is_player_turn = game.sign != m['sign'];
         field.set(toString(m['position']), m['sign']);
     };
 
-    const handle_event = (m) => {
+    const handleEvent = (m) => {
         console.log(m);
     };
 
-    const handle_gameresult = (m) => {
-        console.log(m);
+    const handleGameresult = (m) => {
+        m['row'].forEach((c) => {
+            finished.set(toString(c), c);
+        });
+
+        // creating a modal popup with winner info
+        modal.style.display = 'block';
+        const modal_text = document.getElementById(
+            'winner-label');
+        modal_text.innerHTML = 
+            `<h1><b>PLAYER ${m['sign']} WON!</b></h1>`;
+
+        is_ingame = false;
     };
 
-    const handle_error = (m) => {
+    const handleError = (m) => {
         console.log(m);
     };
 
     // implementing the client side message functions
     
-    const send_newpoint = (pos) => {
+    const sendNewpoint = (pos) => {
         const message = {
             'type': ClientMessage.PUT,
             'position': pos 
@@ -541,14 +608,14 @@ window.addEventListener('load', () => {
         game.socket.send(JSON.stringify(message));
     };
 
-    const send_fullscan = () => {
+    const sendFullscan = () => {
         const message = {
             'type': ClientMessage.FULLSCAN
         };
-        game.socket.send(JSON.stringify());
+        game.socket.send(JSON.stringify(message));
     };
 
-    const send_partscan = () => {
+    const sendPartscan = () => {
 
     };
 
@@ -558,7 +625,7 @@ window.addEventListener('load', () => {
     const join_button = document.getElementById('join-btn');
     join_button.onclick = () => {
         const join_code = getJoinCode();
-        setup_websocket(join_code);
+        startGame(join_code);
     };
     
     // setting up client movement controls and listeners
@@ -576,7 +643,7 @@ window.addEventListener('load', () => {
     canvas.onclick = (e) => {
         const coord = computeRelativeCoord(mouse, pos, canvas);
         if (game.is_player_turn) {
-            send_newpoint(coord);
+            sendNewpoint(coord);
         }
     };
     
@@ -589,9 +656,15 @@ window.addEventListener('load', () => {
     };
   
     const field = new Map();
+    const finished = new Map();
+
+    const resetField = () => {
+        field.clear();
+        finished.clear();
+    };
 
     const update = createUpdate(
-        pos, mouse, canvas, field, selected);
+        pos, mouse, canvas, field, selected, finished, game);
     window.requestAnimationFrame(update);
 });
 

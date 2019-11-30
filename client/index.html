@@ -11,11 +11,13 @@
         <meta name="viewport" content="width=device-wdth, initial-scale=1" />
         <title>Amoeba</title>
         <link rel="stylesheet" href="style.css" />
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" integrity="sha384-SI27wrMjH3ZZ89r4o+fGIJtnzkAnFs3E4qz9DIYioCQ5l9Rd/7UAa8DHcaL8jkWt" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" integrity="sha384-SI27wrMjH3ZZ89r4o+fGIJtnzkAnFs3E4qz9DIYioCQ5l9Rd/7UAa8DHcaL8jkWt" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.6.2/css/bootstrap-slider.min.css" />
+    
     </head>
-    <body>
+    <body style="background-color: lightgoldenrodyellow;">
         <div class=control-panel>
-            <div class="navbar">
+            <div class="navbar" style="background-color:#333">
                 <div class="d-flex">
                     <div class="dropdown">
                         <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -25,17 +27,8 @@
                             <div class="px-4 py-3">
                                 <div class="form-group">
                                     <label for="exampleDropdownFormPassword1"><b>Tiles Required</b></label>
-                                    <div class="size-selection">
-                                        <input type="range" id="label-setter" min="3" max="7" step="1" list="steplist" onchange="setRangeLabel()">
-                                        <datalist id="steplist">
-                                            <option>3</option>
-                                            <option>4</option>
-                                            <option>5</option>
-                                            <option>6</option>
-                                            <option>7</option>
-                                        </datalist>
-                                        <label id="range-label">5</label>
-                                    </div>
+                                    <input id="tile-slider" type="text" data-slider-ticks="[3, 4, 5, 6, 7]" data-slider-value="5"/>
+
                                 </div>
                                 <button class="btn btn-primary" id="host-btn">Host</button>
                             </div>
@@ -45,6 +38,11 @@
                                     <label for="exampleDropdownFormEmail1"><b>Invite Code</b></label>
                                     <input type="text" class="form-control" id="invite-label" readonly="readonly">
                                 </div>
+                                <div class="form-group">
+                                    <label for="exampleDropdownFormEmail1"><b>Your Join Code</b></label>
+                                    <input type="text" class="form-control" id="host-label" readonly="readonly">
+                                </div>
+                                                            
                             </div>
                         </div>
                     </div>
@@ -69,15 +67,23 @@
                                 <button type="submit" class="btn btn-primary" id="join-btn">Join</button>
                             </div>
                         </div>
-                    </div>  
+                    </div>
                 </div>
             </div>       
         </div>
         <canvas id="canvas"></canvas>
+        <div id="finish-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <label id="winner-label"></label>
+                </div>
+           </div>
+        </div>
     </body>
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js" integrity="sha384-3qaqj0lc6sV/qpzrc1N5DC6i1VRn/HyX4qdPaiEFbn54VjQBEU341pvjz7Dv3n6P" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.6.2/bootstrap-slider.min.js"></script>
     <script src="game.js"></script>
 </html>
