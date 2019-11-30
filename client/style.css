@@ -4,6 +4,14 @@
 *  File : style.css
 *******************************************/
 
+.dropdown .style-label {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.h1 .b {
+  color: white;
+}
 
 canvas {
   width: 100%;
@@ -11,18 +19,31 @@ canvas {
   margin: 0;
 } 
 
+
 .navbar {
   font-family: Arial, Helvetica, sans-serif;
 }
 
 
+.control-panel .navbar .d-flex .dropdown .dropdown-menu {
+  color: "black";
+}
+
+
+.tooltip.in {
+    opacity: 1;
+}
+
+
 .d-flex {
+  color: black;
   display: flex;
   justify-content: center;
 }
 
 .form-group {
   width: 200px;
+  color: black;
 }
 
 .wrapper {
@@ -39,11 +60,6 @@ canvas {
   padding: .5em 1em .5em 0;
 }
 
-/* .form-row > input,
-.form-row > button {
-  padding: .5em;
-} */
-
 .form-row > button {
   background: gray;
   color: white;
@@ -52,6 +68,7 @@ canvas {
 
 .dropdown {
   padding: 5px;
+  color: "back";
 } 
 
 .size-selection {
@@ -59,4 +76,43 @@ canvas {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+}
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 50%; /* Full width */
+  height: 50%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal .modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  text-align: center;
+  width: 20%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
 }
