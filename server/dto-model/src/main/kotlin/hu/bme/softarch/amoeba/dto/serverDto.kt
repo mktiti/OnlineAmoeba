@@ -56,4 +56,7 @@ sealed class WsServerMessage {
             val message: String
     ) : WsServerMessage()
 
+    @JsonTypeName("pong")
+    object Pong : WsServerMessage()
+
 }

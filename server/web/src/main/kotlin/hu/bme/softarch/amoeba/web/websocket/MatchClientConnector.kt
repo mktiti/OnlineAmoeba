@@ -2,6 +2,7 @@ package hu.bme.softarch.amoeba.web.websocket
 
 import com.fasterxml.jackson.core.JsonParseException
 import hu.bme.softarch.amoeba.dto.WsClientMessage
+import hu.bme.softarch.amoeba.dto.WsServerMessage
 import hu.bme.softarch.amoeba.dto.WsServerMessage.Error
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.DbLobbyService
@@ -94,8 +95,12 @@ class MatchClientConnector @JvmOverloads constructor(
     }
 
     @OnMessage
-    fun onMessage(@PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String, message: WsClientMessage) {
-        matches[gameId]?.onMessage(joinCode, message)
+    fun onMessage(session: Session?, @PathParam("gameId") gameId: Long, @PathParam("joinCode") joinCode: String, message: WsClientMessage) {
+        if (message == WsClientMessage.Ping) {
+            session?.asyncRemote?.sendObject(WsServerMessage.Pong)
+        } else {
+            matches[gameId]?.onMessage(joinCode, message)
+        }
     }
 
     @OnClose
