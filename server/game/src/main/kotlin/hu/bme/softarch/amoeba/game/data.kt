@@ -5,10 +5,12 @@ import java.math.BigInteger
 enum class Sign {
     X, O;
 
-    operator fun not() = when (this) {
-        X -> O
-        O -> X
+    fun <T> map(xValue: T, oValue: T): T = when (this) {
+        X -> xValue
+        O -> oValue
     }
+
+    operator fun not() = map(O, X)
 
 }
 
