@@ -9,14 +9,24 @@ import hu.bme.softarch.amoeba.game.Pos
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.withLock
 
 class MatchController(fullGame: FullGame) {
+
+    enum class RegisterResult {
+        INVALID_JOIN, MATCH_CLOSED, SUCCESS
+    }
 
     private inner class ClientData(
             val joinCode: String
     ) {
         val outChannels = mutableMapOf<String, (WsServerMessage) -> Unit>()
     }
+
+    private val channelLock: ReadWriteLock = ReentrantReadWriteLock()
 
     private val placeCheck = AtomicBoolean()
 
@@ -31,13 +41,31 @@ class MatchController(fullGame: FullGame) {
     private val xData = ClientData(fullGame.info.hostCode)
     private val oData = ClientData(fullGame.info.clientCode)
 
-    fun registerClient(joinCode: String, channelId: String, channel: (WsServerMessage) -> Unit): Boolean = onActor(joinCode, channelId) { player, _ ->
-        addChannel(player, channelId, channel)
+    fun registerClient(joinCode: String, channelId: String, channel: (WsServerMessage) -> Unit): RegisterResult {
+        return channelLock.readLock().withLock {
+            if (xData.outChannels.isEmpty() && oData.outChannels.isEmpty()) {
+                RegisterResult.MATCH_CLOSED
+            } else {
+                val valid = onActor(joinCode, channelId) { player, _ ->
+                    addChannel(player, channelId, channel)
+                }
+                if (valid) {
+                    RegisterResult.SUCCESS
+                } else  {
+                    RegisterResult.INVALID_JOIN
+                }
+            }
+        }
     }
 
     fun onMessage(joinCode: String, message: WsClientMessage): Boolean = onActor(joinCode, message, this::onMessage)
 
-    fun unregisterClient(joinCode: String, channelId: String) = onActor(joinCode, channelId, this::removeChannel)
+    fun unregisterClient(joinCode: String, channelId: String): Boolean {
+        return channelLock.writeLock().withLock {
+            onActor(joinCode, channelId, this::removeChannel)
+            xData.outChannels.isEmpty() && oData.outChannels.isEmpty()
+        }
+    }
 
     private fun <T> onActor(joinCode: String, param: T, action: (Sign, T) -> Unit): Boolean {
         val player = mapSign(joinCode) ?: return false

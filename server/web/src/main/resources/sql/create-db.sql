@@ -3,6 +3,7 @@ create table if not exists Game(
     lastStored  timestamp(0) not null,
     hostCode    varchar(50) not null,
     clientCode  varchar(50) not null,
+    invite      varchar(50) null,
     toWin       int not null,
 
     check (toWin > 2)
@@ -15,10 +16,4 @@ create table if not exists Tile(
     isX     bit not null,
 
     primary key (gameId, posX, posY)
-);
-
-create table if not exists Invite(
-    id      bigint identity primary key,
-    invite  varchar(50) not null unique,
-    gameId  bigint not null references Game(id) on delete cascade
 );

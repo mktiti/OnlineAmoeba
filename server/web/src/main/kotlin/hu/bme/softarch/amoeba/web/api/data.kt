@@ -10,7 +10,9 @@ data class GameInfo(
     val toWin: Int,
 
     val hostCode: String,
-    val clientCode: String
+    val clientCode: String,
+
+    val invite: String?
 )
 
 data class GameData(

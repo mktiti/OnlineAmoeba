@@ -34,7 +34,7 @@ fun main(args: Array<String>) = mainBody {
         }
 
         setLogLocation(logLocation)
-        DbContextHolder.initDb(Paths.get(dbLocation))
+        DbContextHolder.initFileDb(Paths.get(dbLocation))
 
         val testHandler = GameHandler()
         val game = testHandler.createInternal(NewGameData(tilesToWin = 5))

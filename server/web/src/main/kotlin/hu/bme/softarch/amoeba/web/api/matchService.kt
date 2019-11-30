@@ -11,10 +11,9 @@ import javax.ws.rs.core.MediaType
 @Path("/matches")
 @Singleton
 @Produces(MediaType.APPLICATION_JSON)
-class GameHandler {
-
-    private val lobbyService: LobbyService = DbLobbyService
-    private val inviteStore: InviteStore = SyncInviteStore()
+class GameHandler @JvmOverloads constructor(
+        private val lobbyService: LobbyService = DbLobbyService()
+) {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -24,9 +23,7 @@ class GameHandler {
 
     internal fun createInternal(params: NewGameData): CreatedGameData {
         val game = lobbyService.createGame(params.tilesToWin)
-        val invite = inviteStore.addGame(game)
-
-        return CreatedGameData(id = game.id, inviteCode = invite, hostJoinCode = game.hostCode)
+        return CreatedGameData(game.id, game.invite!!, game.hostCode)
     }
 
     @GET
@@ -35,10 +32,10 @@ class GameHandler {
         joinInternal(invite)
     }
 
-    internal fun joinInternal(invite: String): GameJoinData? = inviteStore.fetch(invite)?.let {
+    internal fun joinInternal(invite: String): GameJoinData? = lobbyService.popInvite(invite)?.let {
         GameJoinData(
-                id = it.id,
-                clientJoinCode = it.clientCode
+            id = it.id,
+            clientJoinCode = it.clientCode
         )
     }
 

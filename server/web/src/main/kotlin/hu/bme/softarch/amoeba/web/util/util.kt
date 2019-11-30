@@ -13,6 +13,12 @@ fun <T> safeEntity(producer: () -> T?): Response = entity {
     }
 }
 
+inline fun loop(code: () -> Unit): Nothing {
+    while (true) {
+        code()
+    }
+}
+
 fun notFound(): Response = Response.status(404).build()
 
 fun badRequest(message: String = ""): Response = Response.status(400).entity(message).build()
