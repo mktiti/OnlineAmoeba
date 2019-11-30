@@ -380,7 +380,7 @@ const handleHostResponseResults = (result, game) => {
     game.id = result['id'];
 
     const host_label = document.getElementById('host-label');
-    host_label.value = result['hostJoinCode'];
+    host_label.value = `${result['hostJoinCode']}:${result['id']}`;
 };
 
 
@@ -389,7 +389,7 @@ const handleHostResponseResults = (result, game) => {
  */
 const handleJoinResponseResults = (result, game) => {
     const join_text = document.getElementById('join-text');
-    join_text.value = result['clientJoinCode'];
+    join_text.value = `${result['clientJoinCode']}:${result['id']}`;
     game.id = result['id'];
 };
 
@@ -397,9 +397,11 @@ const handleJoinResponseResults = (result, game) => {
 /**
  * Fetches the join code from the join-text field.
  */
-const getJoinCode = () => {
+const getJoinCodeAndGameId = (game) => {
     const join_text = document.getElementById('join-text');
-    return join_text.value;
+    const results = join_text.value.split(':');
+    game.id = results[1];
+    return results[0];
 };
 
 
@@ -624,7 +626,7 @@ window.addEventListener('load', () => {
 
     const join_button = document.getElementById('join-btn');
     join_button.onclick = () => {
-        const join_code = getJoinCode();
+        const join_code = getJoinCodeAndGameId(game);
         startGame(join_code);
     };
     
