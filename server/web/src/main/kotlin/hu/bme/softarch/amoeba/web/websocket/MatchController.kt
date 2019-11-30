@@ -155,7 +155,7 @@ class MatchController(
                         os = gameField.positionsOf(Sign.O, message.range)
                 ))
             }
-            is WsClientMessage.FullScanRequest -> {
+            WsClientMessage.FullScanRequest -> {
                 send(player, FullScanResponse(xs = gameField.positionsOf(Sign.X), os = gameField.positionsOf(Sign.O)))
             }
         }

@@ -1,11 +1,14 @@
 package hu.bme.softarch.amoeba.dto
 
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 @Suppress("unused")
 object DtoEncoder {
-    private val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+    private val mapper: ObjectMapper = ObjectMapper()
+            .registerModule(KotlinModule())
+            .configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, true)
 
     private fun <T> encodeAny(message: T?): String = mapper.writeValueAsString(message)
 
