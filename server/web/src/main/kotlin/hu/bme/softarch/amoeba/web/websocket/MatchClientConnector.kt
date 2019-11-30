@@ -2,14 +2,11 @@ package hu.bme.softarch.amoeba.web.websocket
 
 import com.fasterxml.jackson.core.JsonParseException
 import hu.bme.softarch.amoeba.dto.WsClientMessage
-import hu.bme.softarch.amoeba.dto.WsServerMessage
 import hu.bme.softarch.amoeba.dto.WsServerMessage.Error
 import hu.bme.softarch.amoeba.web.api.DbLobbyService
 import hu.bme.softarch.amoeba.web.api.LobbyService
 import hu.bme.softarch.amoeba.web.util.logger
 import org.eclipse.jetty.websocket.api.CloseException
-import java.lang.IllegalArgumentException
-import java.lang.RuntimeException
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantLock
@@ -35,8 +32,6 @@ class MatchClientConnector @JvmOverloads constructor(
 
     companion object {
         private val matches = mutableMapOf<Long, MatchController>()
-
-        private val matchLock: ReadWriteLock = ReentrantReadWriteLock()
 
         private val matchInitLock: Lock = ReentrantLock()
     }

@@ -1,13 +1,13 @@
 package hu.bme.softarch.amoeba.web.db
 
 import hu.bme.softarch.amoeba.game.Pos
+import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
 import hu.bme.softarch.amoeba.web.api.GameData
 import hu.bme.softarch.amoeba.web.api.GameInfo
 import org.jdbi.v3.core.Jdbi
 import org.jdbi.v3.core.kotlin.mapTo
 import org.jdbi.v3.core.statement.PreparedBatch
-import org.jdbi.v3.core.transaction.TransactionIsolationLevel
 import java.time.LocalDateTime
 
 interface GameRepo {
@@ -20,7 +20,11 @@ interface GameRepo {
 
     fun removeInvite(id: Long)
 
-    fun removeGame(id: Long)
+    fun saveResult(id: Long, winner: Sign, rounds: Int)
+
+    fun getWinsBySign(): Pair<Int, Int>
+
+    fun avgRoundsByToWin(): Map<Int, Float>
 
 }
 
@@ -74,7 +78,27 @@ class DbGameRepo(private val jdbi: Jdbi = DbContextHolder.connection!!) : GameRe
         }
     }
 
-    override fun removeGame(id: Long) = jdbi.useHandle<DatabaseException> { handle ->
-        handle.createUpdate("delete from Game where id = :id").bind("id", id).execute()
+    override fun saveResult(id: Long, winner: Sign, rounds: Int) = jdbi.useTransaction<DatabaseException> { handle ->
+        handle.createUpdate("delete from Tile where gameId = :id").bind("id", id).execute()
+        handle.createUpdate("update Game set xWin = :xWin, rounds = :rounds where id = :gameId")
+                .bind("gameId", id)
+                .bind("xWin", winner == Sign.X)
+                .bind("rounds", rounds)
+                .execute()
+    }
+
+    override fun getWinsBySign(): Pair<Int, Int> = jdbi.withHandle<Pair<Int, Int>, DatabaseException> { handle ->
+        fun wins(x: Boolean): Int = handle.createQuery("select count(id) from Game where xWin = :x")
+                .bind("x", x)
+                .mapTo<Int>()
+                .one()
+
+        wins(true) to wins(false)
+    }
+
+    override fun avgRoundsByToWin(): Map<Int, Float> = jdbi.withHandle<Map<Int, Float>, DatabaseException> { handle ->
+        handle.createQuery("select tilesToWin, avg(rounds) from Game where rounds is not null")
+                .mapTo<Pair<Int, Float>>()
+                .list().toMap()
     }
 }

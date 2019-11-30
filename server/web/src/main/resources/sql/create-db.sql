@@ -6,6 +6,9 @@ create table if not exists Game(
     invite      varchar(50) null,
     toWin       int not null,
 
+    xWin        bit null,
+    rounds      int null,
+
     check (toWin > 2)
 );
 

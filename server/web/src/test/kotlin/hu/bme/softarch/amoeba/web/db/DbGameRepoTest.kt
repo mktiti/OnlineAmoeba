@@ -1,6 +1,7 @@
 package hu.bme.softarch.amoeba.web.db
 
 import hu.bme.softarch.amoeba.game.Pos
+import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
 import hu.bme.softarch.amoeba.web.api.GameData
 import hu.bme.softarch.amoeba.web.api.GameInfo
@@ -155,15 +156,14 @@ class DbGameRepoTest {
         }
 
         testGames.forEach {
-            repo.removeGame(it.info.id)
+            repo.saveResult(it.info.id, Sign.X, 10)
         }
 
         jdbi.useTransaction<Exception> { handle ->
-
-            val gameCount = handle.createQuery("select count(*) from Game").mapTo<Int>().one()
+            val activeGameCount = handle.createQuery("select count(*) from Game where rounds is null or xWin is null").mapTo<Int>().one()
             val tileCount = handle.createQuery("select count(*) from Tile").mapTo<Int>().one()
 
-            assertEquals(0, gameCount)
+            assertEquals(0, activeGameCount)
             assertEquals(0, tileCount)
         }
     }
