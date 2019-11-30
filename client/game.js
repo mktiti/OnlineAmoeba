@@ -43,7 +43,7 @@ const ServerMessage = {
     EVENT:  'event',
     GAMERESULT: 'game-result',
     ERROR:  'error',
-    PING: 'ping'
+    PING: 'pong'
 };
 
 
@@ -443,7 +443,6 @@ window.addEventListener('load', () => {
         });
 
         const result = await response.json();
-        console.log(result);
         
         // plotting win lose ratio
         const pie_data = [{
@@ -562,7 +561,6 @@ window.addEventListener('load', () => {
                 return;
             
             const message = JSON.parse(e.data);
-            console.log(message);
 
             switch (message['type']) {
                 case ServerMessage.INFO:
@@ -594,7 +592,6 @@ window.addEventListener('load', () => {
                     break;
 
                 case ServerMessage.PING:
-                    console.log(asd);
                     break;
             };
         });
@@ -602,7 +599,7 @@ window.addEventListener('load', () => {
         game.socket.addEventListener('open', (e) => {
             sendFullscan();
             
-            setInterval(sendPing, 1000);
+            setInterval(sendPing, 15000);
         });
     }
     
@@ -636,7 +633,7 @@ window.addEventListener('load', () => {
     };
 
     const handleEvent = (m) => {
-        console.log(m);
+        // ignore event message 
     };
 
     const handleGameresult = (m) => {
