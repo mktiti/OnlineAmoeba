@@ -30,13 +30,8 @@ def parse_bot_args():
     parser.add_argument(
         '--url',
         type=str,
-        default='ws://localhost:{port}/game/{game_id}/{join_code}',
+        default='ws://online-amoeba.herokuapp.com/game/{game_id}/{join_code}',
         help='URL for the websocket.')
-    parser.add_argument(
-        '--port',
-        type=str,
-        default='8080',
-        help='Port for the websocket.')
     parser.add_argument(
         '--agent',
         type=str,
@@ -352,7 +347,6 @@ def main():
     join_code, game_id = args.join_code.split(':')
 
     url = args.url.format(
-        port=args.port, 
         game_id=game_id, 
         join_code=join_code)
 

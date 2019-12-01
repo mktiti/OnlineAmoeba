@@ -13,5 +13,4 @@ RUN mkdir -p /home/amoeba/log
 COPY client /home/amoeba/client
 
 COPY --from=build /home/amoeba/server/web/target/amoeba-jar-with-dependencies.jar /usr/local/lib/amoeba.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/usr/local/lib/amoeba.jar", "-c",  "/home/amoeba/client/", "-l", "/home/amoeba/log", "-d", "/home/amoeba/db"]
+CMD java -jar /usr/local/lib/amoeba.jar -c /home/amoeba/client/ -l /home/amoeba/log -d /home/amoeba/db -p $PORT
