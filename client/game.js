@@ -58,6 +58,10 @@ const ClientMessage = {
 };
 
 
+/**
+ * Enumeration that stores the used colors.
+ */
+c
 const Colors = {
     LIGHTGREEN: '#99ff99',
     LIGHTRED: '#ffcccb',
@@ -436,8 +440,6 @@ const getTilesToWin = () => {
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
 
-    // ###################### MODEL ######################
-
     const field = new Map();
     const finished = new Map();
 
@@ -456,8 +458,6 @@ window.addEventListener('load', () => {
         sign: undefined,
         socket: undefined
     }; 
-
-    // ##################### CONTROL #####################  
 
     $('#tile-slider').slider({
         ticks: [3, 4, 5, 6, 7]
@@ -622,10 +622,6 @@ window.addEventListener('load', () => {
         });
     }
     
-    // implementing callback function for the websocket
-    // server side communication
-    
-
     /**
      * Handles the initial info message and sets the
      * next player and sign for the game state.
