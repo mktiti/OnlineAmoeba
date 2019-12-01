@@ -58,6 +58,15 @@ const ClientMessage = {
 };
 
 
+const Colors = {
+    LIGHTGREEN: '#99ff99',
+    LIGHTRED: '#ffcccb',
+    LIGHTGREY: '#d3d3d3',
+    DARKGREY: '#777',
+    BLACK: '#000000'
+}
+
+
 /**
  * Draws a circle around the provided coordinates. 
  */
@@ -188,7 +197,8 @@ const computeRelativeCoord = (mouse, pos, canvas) => {
  * (screen middle) coordinates.
  */
 const draw = (
-        pos, ctx, canvas, field, selected, finished, game) => {
+        pos, ctx, canvas, field, 
+        selected, finished, game) => {
     const size = computeSize(canvas);
 
     // offsets are the value by which the grid is shifted
@@ -198,8 +208,6 @@ const draw = (
 
     ctx.beginPath();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // ctx.fillStyle = '#FFFFFF';
-    // ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.stroke();
 
     // offset to place the 0, 0 point in the middle of
@@ -226,7 +234,7 @@ const draw = (
 
             if (c && c.x == coord.x && c.y == coord.y) {
                 ctx.beginPath();
-                ctx.fillStyle = '#00d300';
+                ctx.fillStyle = Colors.LIGHTGREEN;
                 ctx.fillRect(left, top, UNIT, UNIT);
                 ctx.stroke();
             } 
@@ -237,18 +245,18 @@ const draw = (
                 ctx.beginPath();
 
                 if (!is_ingame)
-                    ctx.fillStyle = '#d3d3d3';
+                    ctx.fillStyle = Colors.LIGHTGREY;
                 else if (game.is_player_turn)
-                    ctx.fillStyle = '#99ff99';
+                    ctx.fillStyle = Colors.LIGHTGREEN;
                 else
-                    ctx.fillStyle = '#ffcccb';
+                    ctx.fillStyle = Colors.LIGHTRED;
 
                 ctx.fillRect(left, top, UNIT, UNIT);
                 ctx.stroke();
                 
-                ctx.strokeStyle = '#777';
+                ctx.strokeStyle = Colors.DARKGREY;
                 drawSign(left, top, ctx, game.sign);
-                ctx.strokeStyle = '#000000';
+                ctx.strokeStyle = Colors.BLACK;
             } 
 
             ctx.lineWidth = 1; 
@@ -427,10 +435,94 @@ const getTilesToWin = () => {
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas');
-    
-    const stat_button = document.getElementById('stat-btn');
-    const stats_modal = document.getElementById('stats-modal');        
 
+    // ###################### MODEL ######################
+
+    const field = new Map();
+    const finished = new Map();
+
+    const resetField = () => {
+        field.clear();
+        finished.clear();
+    }; 
+
+    let mouse = {x: 0, y: 0}; // location of mouse in pixel
+    let pos = {x : 0, y: 0}; // location of the screen 
+    let selected = {x: 0, y: 0}; // targeted cell
+
+    let game = {
+        id: undefined, 
+        is_player_turn: false, 
+        sign: undefined,
+        socket: undefined
+    }; 
+
+    // ##################### CONTROL #####################  
+
+    $('#tile-slider').slider({
+        ticks: [3, 4, 5, 6, 7]
+    });
+    
+    // preventing the dropdown menu from closing on click
+    $(document).on(
+           'click', '.dropdown-menu', (e) => {
+        e.stopPropagation();
+    });
+   
+    const finish_modal = document.getElementById('finish-modal');
+    const stats_modal = document.getElementById('stats-modal');        
+    
+    // when the user clicks anywhere outside of 
+    // the modal, close it 
+    window.addEventListener('click', (e) => {
+        if (e.target == finish_modal) {
+            finish_modal.style.display = 'none';
+        } else if (e.target == stats_modal) {
+            stats_modal.style.display = 'none';
+        }
+    });
+
+    // setting up listeners for the host window
+    // quering the game id and the invite codes
+
+    const host_button = document.getElementById('host-btn');
+    host_button.onclick = async () => {
+        const n_tiles = getTilesToWin();
+
+        const response = await fetch(REST_URL, {
+            method: 'POST',
+            body: JSON.stringify({'tilesToWin': n_tiles}),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        handleHostResponseResults(result, game);
+        
+        startGame(result['hostJoinCode']); 
+    };
+
+    // setting up listeners for the join window
+    // generating join code
+
+    const generate_button = document.getElementById('gen-btn');
+    generate_button.onclick = async () => {
+        const invite_code = getInviteCode();
+
+        const response = await fetch(
+            `${REST_URL}?invite=${invite_code}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        handleJoinResponseResults(result, game);
+    };
+
+    const stat_button = document.getElementById('stat-btn');
     stat_button.onclick = async (e) => {
         stats_modal.style.display = 'block';
        
@@ -472,79 +564,6 @@ window.addEventListener('load', () => {
         let dist_layout = {title : 'Average rounds by tiles'};
         Plotly.plot('dist_div', bar_data, dist_layout);
                 
-   };
-
-    $('#tile-slider').slider({
-        ticks: [3, 4, 5, 6, 7]
-    });
-    
-    // preventing the dropdown menu from closing on click
-    $(document).on(
-           'click', '.dropdown-menu', (e) => {
-        e.stopPropagation();
-    });
-   
-    const finish_modal = document.getElementById('finish-modal');
-    
-    // when the user clicks anywhere outside of 
-    // the modal, close it 
-    window.addEventListener('click', (e) => {
-        if (e.target == finish_modal) {
-            finish_modal.style.display = 'none';
-        } else if (e.target == stats_modal) {
-            stats_modal.style.display = 'none';
-        }
-    });
-
-    let mouse = {x: 0, y: 0}; // location of mouse in pixel
-    let pos = {x : 0, y: 0}; // location of the screen 
-    let selected = {x: 0, y: 0}; // targeted cell
-
-    let game = {
-        id: undefined, 
-        is_player_turn: false, 
-        sign: undefined,
-        socket: undefined
-    };
-
-    // setting up listeners for the host window
-    // quering the game id and the invite codes
-
-    const host_button = document.getElementById('host-btn');
-    host_button.onclick = async () => {
-        const n_tiles = getTilesToWin();
-
-        const response = await fetch(REST_URL, {
-            method: 'POST',
-            body: JSON.stringify({'tilesToWin': n_tiles}),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const result = await response.json();
-        handleHostResponseResults(result, game);
-        
-        startGame(result['hostJoinCode']); 
-    };
-
-    // setting up listeners for the join window
-    // generating join code
-
-    const generate_button = document.getElementById('gen-btn');
-    generate_button.onclick = async () => {
-        const invite_code = getInviteCode();
-
-        const response = await fetch(
-            `${REST_URL}?invite=${invite_code}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const result = await response.json();
-        handleJoinResponseResults(result, game);
     };
 
     // sets up websocket and its event listeners by
@@ -605,12 +624,21 @@ window.addEventListener('load', () => {
     
     // implementing callback function for the websocket
     // server side communication
+    
 
+    /**
+     * Handles the initial info message and sets the
+     * next player and sign for the game state.
+     */    
     const handleInfo = (m) => {
         game.sign = m['sign']
         game.is_player_turn = game.sign == m['waitingFor'];
     };
-
+    
+    /**
+     * Resets the field and populates it with elements
+     * fetched from the server.
+     */  
     const handleFullscan = (m) => {
         resetField();
         
@@ -622,20 +650,34 @@ window.addEventListener('load', () => {
             field.set(toString(c), Sign.CIRCLE);
         });
     };
-
+    
+    /**
+     * Partscan request is not implemented.
+     */  
     const handlePartscan = (m) => {
-        
+        // infore part scan message    
     };
-
+    
+    /**
+     * Adds the new point to the field and sets the
+     * next player in the game state.
+     */  
     const handleNewpoint = (m) => {
         game.is_player_turn = game.sign != m['sign'];
         field.set(toString(m['position']), m['sign']);
     };
-
+      
+    /**
+     * Event messages are irrelevant for the client.
+     */  
     const handleEvent = (m) => {
         // ignore event message 
     };
-
+    
+    /**
+     * Sets the finished map with the winning sequence
+     * and opens the modal displaying the winner.
+     */  
     const handleGameresult = (m) => {
         m['row'].forEach((c) => {
             finished.set(toString(c), c);
@@ -650,13 +692,17 @@ window.addEventListener('load', () => {
 
         is_ingame = false;
     };
-
+    
+    /**
+     * Errors are logged to the console for debugging.
+     */  
     const handleError = (m) => {
         console.log(m);
     };
-
-    // implementing the client side message functions
     
+    /**
+     * Sends a new point to the server.
+     */  
     const sendNewpoint = (pos) => {
         const message = {
             'type': ClientMessage.PUT,
@@ -664,21 +710,27 @@ window.addEventListener('load', () => {
         };
         game.socket.send(JSON.stringify(message));
     };
-
+      
+    /**
+     * Sends fullscan request to server.
+     */  
     const sendFullscan = () => {
         const message = {
             'type': ClientMessage.FULLSCAN
         };
         game.socket.send(JSON.stringify(message));
     };
-
+      
+    /**
+     * Sends a ping message to the server for keepalive. 
+     */  
     const sendPing = () => {
         const message = {'type': ClientMessage.PING};
         game.socket.send(JSON.stringify(message));
     }
 
     const sendPartscan = () => {
-
+        // partscan is not implemented
     };
 
     // setting up listeners for the join game button and
@@ -701,7 +753,7 @@ window.addEventListener('load', () => {
         selected.x = coord.x;
         selected.y = coord.y;
     };
-
+    
     canvas.onclick = (e) => {
         const coord = computeRelativeCoord(mouse, pos, canvas);
         if (game.is_player_turn) {
@@ -716,15 +768,7 @@ window.addEventListener('load', () => {
     canvas.onmouseenter = () => {
         is_inside = true; 
     };
-  
-    const field = new Map();
-    const finished = new Map();
-
-    const resetField = () => {
-        field.clear();
-        finished.clear();
-    };
-
+    
     const update = createUpdate(
         pos, mouse, canvas, field, selected, finished, game);
     window.requestAnimationFrame(update);
