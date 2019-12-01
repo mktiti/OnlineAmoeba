@@ -176,10 +176,10 @@ def check_direction(direction, pos, moves):
         """
         curr = add(pos, direction)
         while to_string(curr) in moves:
-            yield curr
+            yield 1
             curr = add(curr, direction)
 
-    return sum(1 for _ in generate_seq())
+    return sum(generate_seq())
 
 
 def find_longest_sequence(pos, moves):
