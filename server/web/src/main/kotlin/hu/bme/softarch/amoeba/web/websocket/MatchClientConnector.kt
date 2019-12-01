@@ -6,6 +6,7 @@ import hu.bme.softarch.amoeba.dto.WsServerMessage
 import hu.bme.softarch.amoeba.dto.WsServerMessage.Error
 import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.DbLobbyService
+import hu.bme.softarch.amoeba.web.api.GameInfo
 import hu.bme.softarch.amoeba.web.api.LobbyService
 import hu.bme.softarch.amoeba.web.util.logger
 import org.eclipse.jetty.websocket.api.CloseException
@@ -36,6 +37,12 @@ class MatchClientConnector @JvmOverloads constructor(
         private val matches = mutableMapOf<Long, MatchController>()
 
         private val matchInitLock: Lock = ReentrantLock()
+
+        fun withGameLock(infoProcessor: (Collection<Long>) -> Unit) {
+            matchInitLock.withLock {
+                infoProcessor(matches.keys)
+            }
+        }
     }
 
     private val log by logger()
