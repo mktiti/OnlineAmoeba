@@ -165,7 +165,7 @@ class MatchController(
         data(player).outChannels[channelId] = channel
 
         send(OpponentEvent("New client joined for $player"))
-        channel(Info(player, waitingFor))
+        channel(Info(player, gameInfo.toWin, waitingFor))
     }
 
     private fun removeChannel(player: Sign, channelId: String) {
