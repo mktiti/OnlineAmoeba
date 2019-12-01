@@ -6,12 +6,12 @@
 
 "use strict";
 
+const HOST = window.location.host || ("localhost" + (window.location.port || 80));
 
 const UNIT = 50;  // size of the unit rectangle
 const DELTA = 6; // fps ( 16 is roughly 60fps )
 const SPEED = 6; // speed of the movement
 const PROP = 0.2; // proportion of the shape frame 
-const PORT = '8080'
 
 const OFFSET = UNIT * PROP;
 
@@ -19,9 +19,9 @@ const OFFSET = UNIT * PROP;
 let is_inside = false;
 let is_ingame = false;
 
-const REST_URL = `http://localhost:${PORT}/api/matches`; 
-const WS_URL = `ws://localhost:${PORT}/game`;
-const STAT_URL = `http://localhost:${PORT}/api/matches/stats`;
+const REST_URL = `http://${HOST}/api/matches`; 
+const WS_URL = `ws://${HOST}/game`;
+const STAT_URL = `http://${HOST}/api/matches/stats`;
 
 /**
  * Enumeration that stores the possible signs.
@@ -61,7 +61,6 @@ const ClientMessage = {
 /**
  * Enumeration that stores the used colors.
  */
-c
 const Colors = {
     LIGHTGREEN: '#99ff99',
     LIGHTRED: '#ffcccb',
