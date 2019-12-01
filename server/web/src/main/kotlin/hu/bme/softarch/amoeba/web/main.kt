@@ -7,9 +7,11 @@ import hu.bme.softarch.amoeba.game.web.generated.ProjectInfo
 import hu.bme.softarch.amoeba.web.util.Server.startServer
 import hu.bme.softarch.amoeba.web.api.GameHandler
 import hu.bme.softarch.amoeba.dto.NewGameData
+import hu.bme.softarch.amoeba.web.db.CleanService
 import hu.bme.softarch.amoeba.web.db.DbContextHolder
 import hu.bme.softarch.amoeba.web.util.setLogLocation
 import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 class Arguments(parser: ArgParser) {
@@ -23,6 +25,10 @@ class Arguments(parser: ArgParser) {
     val logLocation by parser.storing("-l", "--log", help = "Log file destination").default("log")
 
     val dbLocation by parser.storing("-d", "--database", help = "Database folder destination").default("db")
+
+    val cleanInterval by parser.storing("-i", "--clean-interval", help = "Interval between game cleanups, in hours", transform = String::toInt).default(24)
+
+    val unusedKeepTime by parser.storing("-t", "--keep-time", help = "Time to live of open games, in hours", transform = String::toInt).default(24)
 
 }
 
@@ -42,7 +48,8 @@ fun main(args: Array<String>) = mainBody {
 
         println("Test game ready: Id: ${game.id}, host join: ${game.hostJoinCode}, client join: $clientJoin")
 
-        startServer(port, clientDir)
+        CleanService.start(cleanInterval, TimeUnit.HOURS, unusedKeepTime)
 
+        startServer(port, clientDir)
     }
 }

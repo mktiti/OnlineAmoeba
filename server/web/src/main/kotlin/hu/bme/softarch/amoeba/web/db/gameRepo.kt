@@ -5,9 +5,11 @@ import hu.bme.softarch.amoeba.game.Sign
 import hu.bme.softarch.amoeba.web.api.FullGame
 import hu.bme.softarch.amoeba.web.api.GameData
 import hu.bme.softarch.amoeba.web.api.GameInfo
+import hu.bme.softarch.amoeba.web.util.logger
 import org.jdbi.v3.core.Jdbi
 import org.jdbi.v3.core.kotlin.mapTo
 import org.jdbi.v3.core.statement.PreparedBatch
+import java.lang.Exception
 import java.time.LocalDateTime
 
 interface GameRepo {
@@ -27,6 +29,8 @@ interface GameRepo {
     fun getWinsBySign(): SignWins
 
     fun avgRoundsByToWin(): Map<Int, Float>
+
+    fun deleteInactive(activeGames: Collection<Long>, keepTime: Int)
 
 }
 
@@ -102,5 +106,17 @@ class DbGameRepo(private val jdbi: Jdbi = DbContextHolder.connection!!) : GameRe
         handle.createQuery("select toWin, avg(rounds) from Game where rounds is not null group by toWin")
                 .map {rs, _ ->  rs.getInt(1) to rs.getFloat(2) }
                 .toMap()
+    }
+
+    override fun deleteInactive(activeGames: Collection<Long>, keepTime: Int) = jdbi.useTransaction<DatabaseException> { handle ->
+        try {
+            handle.createUpdate("delete from Game where xWin is null and id not in (<activeIds>) and TIMESTAMPDIFF(SQL_TSI_HOUR, lastStored, CURRENT_TIMESTAMP) > :keepTime")
+                    .bindList("activeIds", if (activeGames.isEmpty()) listOf(-1) else activeGames)
+                    .bind("keepTime", keepTime)
+                    .execute()
+        } catch (e: Exception) {
+            val log by logger()
+            log.error("", e)
+        }
     }
 }
