@@ -96,7 +96,7 @@ class Agent:
         self.waitingFor = 'X' if sign == 'O' else 'O'
          
     def act(self):
-       raise NotImplmenetedError('Abstract method.') 
+       raise NotImplementedError('Abstract method.') 
 
 
 def to_string(pos):
@@ -113,8 +113,9 @@ def generate_neighbours(pos):
     """
     for x in range(pos['x'] - 1, pos['x'] + 2):
         for y in range(pos['y'] - 1, pos['y'] + 2):
-            if x != pos['x'] and y != pos['y']:
-                yield {'x': x, 'y': y}
+            if x == pos['x'] and y == pos['y']:
+                continue
+            yield {'x': x, 'y': y}
 
 
 def find_nearby_legal_moves(moves):
@@ -152,9 +153,9 @@ class RandomAgent(Agent):
 
     def act(self):
         moves = find_nearby_legal_moves(self.moves)
-        selected = random.choice(list(moves.keys()))
+        selected = random.choice(moves.values())
 
-        return moves[selected]
+        return selected 
 
 
 def check_direction(direction, pos, moves):
@@ -218,11 +219,22 @@ class WeightedAgent(Agent):
         if len(pos_list) == 0:
             return {'x': 0, 'y': 0}
         
-        selected = max(
-            pos_list, 
-            key=lambda p: find_longest_sequence(
-                p, self.moves[self.sign]))
+        opponent = 'X' if self.sign == 'O' else 'O'
 
+        def find_best(p):
+            """
+            Looks at the best opponent and player
+            moves and chooses the best.
+            """
+            agent_best = find_longest_sequence(
+                p, self.moves[self.sign])
+            opp_best = find_longest_sequence(
+                p, self.moves[opponent])
+
+            return max(agent_best, opp_best)
+        
+        selected = max(pos_list, key=find_best)
+        
         return selected 
 
 
@@ -347,8 +359,7 @@ def main():
     agent = create_agent(args)
 
     asyncio.get_event_loop().run_until_complete(
-        play(url, agent))
-    
+       play(url, agent))
 
 if __name__ == '__main__':
     main()
