@@ -15,6 +15,7 @@ data class CreatedGameData(
 
 data class GameJoinData(
     val id: Long,
+    val tilesToWin: Int,
     val clientJoinCode: String
 )
 

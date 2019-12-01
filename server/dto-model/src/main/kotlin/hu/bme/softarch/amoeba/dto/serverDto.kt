@@ -13,6 +13,7 @@ sealed class WsServerMessage {
     @JsonTypeName("info")
     data class Info(
             val sign: Sign,
+            val tilesToWin: Int,
             val waitingFor: Sign?
     ) : WsServerMessage()
 

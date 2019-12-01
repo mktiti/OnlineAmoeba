@@ -45,6 +45,7 @@ class GameHandler @JvmOverloads constructor(
     internal fun joinInternal(invite: String): GameJoinData? = lobbyService.popInvite(invite)?.let {
         GameJoinData(
             id = it.id,
+            tilesToWin = it.toWin,
             clientJoinCode = it.clientCode
         )
     }
